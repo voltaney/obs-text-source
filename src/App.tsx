@@ -137,6 +137,41 @@ const FONT_FAMILY_OPTIONS: ReadonlyArray<{
     language: 'ja',
   },
   {
+    label: '日本語サンプル - BIZ UDPGothic',
+    value: "'BIZ UDPGothic', 'Yu Gothic UI', sans-serif",
+    language: 'ja',
+  },
+  {
+    label: '日本語サンプル - BIZ UDPMincho',
+    value: "'BIZ UDPMincho', 'Yu Mincho', serif",
+    language: 'ja',
+  },
+  {
+    label: '日本語サンプル - M PLUS 1p',
+    value: "'M PLUS 1p', 'Hiragino Kaku Gothic ProN', sans-serif",
+    language: 'ja',
+  },
+  {
+    label: '日本語サンプル - 游明朝',
+    value: "'Yu Mincho', 'Hiragino Mincho ProN', serif",
+    language: 'ja',
+  },
+  {
+    label: '日本語サンプル - UD デジタル 教科書体',
+    value: "'UD Digi Kyokasho NK-R', 'Yu Gothic UI', sans-serif",
+    language: 'ja',
+  },
+  {
+    label: '日本語サンプル - MS ゴシック',
+    value: "'MS Gothic', 'Meiryo', sans-serif",
+    language: 'ja',
+  },
+  {
+    label: '日本語サンプル - MS 明朝',
+    value: "'MS Mincho', 'Yu Mincho', serif",
+    language: 'ja',
+  },
+  {
     label: 'English Sample - Inter',
     value: "'Inter', 'Segoe UI', sans-serif",
     language: 'en',
@@ -159,6 +194,56 @@ const FONT_FAMILY_OPTIONS: ReadonlyArray<{
   {
     label: 'English Sample - Cascadia Mono',
     value: "'Cascadia Mono', 'Consolas', monospace",
+    language: 'en',
+  },
+  {
+    label: 'English Sample - Segoe UI',
+    value: "'Segoe UI', 'Arial', sans-serif",
+    language: 'en',
+  },
+  {
+    label: 'English Sample - Arial',
+    value: "'Arial', 'Helvetica Neue', sans-serif",
+    language: 'en',
+  },
+  {
+    label: 'English Sample - Verdana',
+    value: "'Verdana', 'Geneva', sans-serif",
+    language: 'en',
+  },
+  {
+    label: 'English Sample - Tahoma',
+    value: "'Tahoma', 'Verdana', sans-serif",
+    language: 'en',
+  },
+  {
+    label: 'English Sample - Trebuchet MS',
+    value: "'Trebuchet MS', 'Verdana', sans-serif",
+    language: 'en',
+  },
+  {
+    label: 'English Sample - Times New Roman',
+    value: "'Times New Roman', 'Georgia', serif",
+    language: 'en',
+  },
+  {
+    label: 'English Sample - Cambria',
+    value: "'Cambria', 'Times New Roman', serif",
+    language: 'en',
+  },
+  {
+    label: 'English Sample - Palatino Linotype',
+    value: "'Palatino Linotype', 'Book Antiqua', serif",
+    language: 'en',
+  },
+  {
+    label: 'English Sample - Courier New',
+    value: "'Courier New', 'Consolas', monospace",
+    language: 'en',
+  },
+  {
+    label: 'English Sample - Consolas',
+    value: "'Consolas', 'Cascadia Mono', monospace",
     language: 'en',
   },
 ]

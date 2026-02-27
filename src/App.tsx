@@ -7,6 +7,8 @@ type SlideDirection = 'left' | 'right' | 'up' | 'down'
 type ScrollDirection = 'left' | 'right' | 'up' | 'down'
 type HorizontalAlign = 'left' | 'center' | 'right'
 type VerticalAlign = 'top' | 'center' | 'bottom'
+type PreviewSize = '1920x1080' | '1280x720' | '1080x1920'
+type PreviewBackground = 'checker' | 'dark' | 'light' | 'transparent'
 
 interface TextEffectConfig {
   text: string
@@ -97,6 +99,27 @@ const DEFAULT_CONFIG: TextEffectConfig = {
 }
 
 const BOOLEAN_TRUE_SET = new Set(['1', 'true', 'yes', 'on'])
+
+const PREVIEW_SIZE_OPTIONS: ReadonlyArray<{
+  id: PreviewSize
+  label: string
+  width: number
+  height: number
+}> = [
+  { id: '1920x1080', label: '1920 x 1080', width: 1920, height: 1080 },
+  { id: '1280x720', label: '1280 x 720', width: 1280, height: 720 },
+  { id: '1080x1920', label: '1080 x 1920', width: 1080, height: 1920 },
+]
+
+const PREVIEW_BACKGROUND_OPTIONS: ReadonlyArray<{
+  id: PreviewBackground
+  label: string
+}> = [
+  { id: 'checker', label: 'Checker' },
+  { id: 'dark', label: 'Dark' },
+  { id: 'light', label: 'Light' },
+  { id: 'transparent', label: 'Transparent' },
+]
 
 function clamp(value: number, min: number, max: number): number {
   if (Number.isNaN(value)) {
@@ -321,6 +344,8 @@ function isRenderMode(search: string): boolean {
 function EditorPage(): ReactElement {
   const [config, setConfig] = useState<TextEffectConfig>(DEFAULT_CONFIG)
   const [copied, setCopied] = useState(false)
+  const [previewSize, setPreviewSize] = useState<PreviewSize>('1920x1080')
+  const [previewBackground, setPreviewBackground] = useState<PreviewBackground>('checker')
 
   const renderUrl = useMemo(() => {
     const url = new URL(window.location.href)
@@ -329,6 +354,9 @@ function EditorPage(): ReactElement {
     url.searchParams.set('cfg', encodeConfig(config))
     return url.toString()
   }, [config])
+
+  const selectedPreviewSize =
+    PREVIEW_SIZE_OPTIONS.find((option) => option.id === previewSize) ?? PREVIEW_SIZE_OPTIONS[0]
 
   const setByPath = (path: string, value: unknown) => {
     const keys = path.split('.')
@@ -367,368 +395,429 @@ function EditorPage(): ReactElement {
       <h1>Text Effect URL Generator</h1>
       <p className="description">OBS Browser Source向けの透過テキストエフェクトURLを生成します。</p>
 
-      <section className="panel">
-        <h2>Text</h2>
-        <label>
-          表示文字
-          <textarea value={config.text} onChange={(event) => setString('text', event.target.value)} rows={4} />
-        </label>
-        <div className="grid two">
-          <label>
-            文字色
-            <input type="color" value={config.color} onChange={(event) => setString('color', event.target.value)} />
-          </label>
-          <label>
-            背景色
-            <input type="text" value={config.backgroundColor} onChange={(event) => setString('backgroundColor', event.target.value)} />
-          </label>
-          <label>
-            Font Size
-            <input
-              type="number"
-              value={config.fontSize}
-              min={8}
-              max={320}
-              onChange={(event) => setNumber('fontSize', Number(event.target.value))}
-            />
-          </label>
-          <label>
-            Font Weight
-            <input
-              type="number"
-              value={config.fontWeight}
-              min={100}
-              max={900}
-              step={100}
-              onChange={(event) => setNumber('fontWeight', Number(event.target.value))}
-            />
-          </label>
-          <label>
-            Letter Spacing
-            <input
-              type="number"
-              value={config.letterSpacing}
-              min={-12}
-              max={30}
-              step={0.1}
-              onChange={(event) => setNumber('letterSpacing', Number(event.target.value))}
-            />
-          </label>
-          <label>
-            Stroke Width
-            <input
-              type="number"
-              value={config.strokeWidth}
-              min={0}
-              max={30}
-              step={0.5}
-              onChange={(event) => setNumber('strokeWidth', Number(event.target.value))}
-            />
-          </label>
-          <label>
-            Stroke Color
-            <input type="text" value={config.strokeColor} onChange={(event) => setString('strokeColor', event.target.value)} />
-          </label>
-          <label>
-            Horizontal Align
-            <select
-              value={config.horizontalAlign}
-              onChange={(event) => setString('horizontalAlign', event.target.value as HorizontalAlign)}
+      <div className="editor-layout">
+        <div className="editor-controls">
+          <section className="panel">
+            <h2>Text</h2>
+            <label>
+              表示文字
+              <textarea value={config.text} onChange={(event) => setString('text', event.target.value)} rows={4} />
+            </label>
+            <div className="grid two">
+              <label>
+                文字色
+                <input type="color" value={config.color} onChange={(event) => setString('color', event.target.value)} />
+              </label>
+              <label>
+                背景色
+                <input
+                  type="text"
+                  value={config.backgroundColor}
+                  onChange={(event) => setString('backgroundColor', event.target.value)}
+                />
+              </label>
+              <label>
+                Font Size
+                <input
+                  type="number"
+                  value={config.fontSize}
+                  min={8}
+                  max={320}
+                  onChange={(event) => setNumber('fontSize', Number(event.target.value))}
+                />
+              </label>
+              <label>
+                Font Weight
+                <input
+                  type="number"
+                  value={config.fontWeight}
+                  min={100}
+                  max={900}
+                  step={100}
+                  onChange={(event) => setNumber('fontWeight', Number(event.target.value))}
+                />
+              </label>
+              <label>
+                Letter Spacing
+                <input
+                  type="number"
+                  value={config.letterSpacing}
+                  min={-12}
+                  max={30}
+                  step={0.1}
+                  onChange={(event) => setNumber('letterSpacing', Number(event.target.value))}
+                />
+              </label>
+              <label>
+                Stroke Width
+                <input
+                  type="number"
+                  value={config.strokeWidth}
+                  min={0}
+                  max={30}
+                  step={0.5}
+                  onChange={(event) => setNumber('strokeWidth', Number(event.target.value))}
+                />
+              </label>
+              <label>
+                Stroke Color
+                <input
+                  type="text"
+                  value={config.strokeColor}
+                  onChange={(event) => setString('strokeColor', event.target.value)}
+                />
+              </label>
+              <label>
+                Horizontal Align
+                <select
+                  value={config.horizontalAlign}
+                  onChange={(event) => setString('horizontalAlign', event.target.value as HorizontalAlign)}
+                >
+                  <option value="left">left</option>
+                  <option value="center">center</option>
+                  <option value="right">right</option>
+                </select>
+              </label>
+              <label>
+                Vertical Align
+                <select
+                  value={config.verticalAlign}
+                  onChange={(event) => setString('verticalAlign', event.target.value as VerticalAlign)}
+                >
+                  <option value="top">top</option>
+                  <option value="center">center</option>
+                  <option value="bottom">bottom</option>
+                </select>
+              </label>
+              <label>
+                Padding X
+                <input
+                  type="number"
+                  value={config.paddingX}
+                  min={0}
+                  max={400}
+                  step={1}
+                  onChange={(event) => setNumber('paddingX', Number(event.target.value))}
+                />
+              </label>
+              <label>
+                Padding Y
+                <input
+                  type="number"
+                  value={config.paddingY}
+                  min={0}
+                  max={400}
+                  step={1}
+                  onChange={(event) => setNumber('paddingY', Number(event.target.value))}
+                />
+              </label>
+            </div>
+          </section>
+
+          <section className="panel">
+            <h2>Shadow</h2>
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={config.shadow.enabled}
+                onChange={(event) => setBoolean('shadow.enabled', event.target.checked)}
+              />
+              Shadowを有効化
+            </label>
+            <div className="grid two">
+              <label>
+                X
+                <input
+                  type="number"
+                  value={config.shadow.x}
+                  min={-400}
+                  max={400}
+                  step={1}
+                  onChange={(event) => setNumber('shadow.x', Number(event.target.value))}
+                />
+              </label>
+              <label>
+                Y
+                <input
+                  type="number"
+                  value={config.shadow.y}
+                  min={-400}
+                  max={400}
+                  step={1}
+                  onChange={(event) => setNumber('shadow.y', Number(event.target.value))}
+                />
+              </label>
+              <label>
+                Blur
+                <input
+                  type="number"
+                  value={config.shadow.blur}
+                  min={0}
+                  max={400}
+                  step={1}
+                  onChange={(event) => setNumber('shadow.blur', Number(event.target.value))}
+                />
+              </label>
+              <label>
+                Spread
+                <input
+                  type="number"
+                  value={config.shadow.spread}
+                  min={-200}
+                  max={200}
+                  step={1}
+                  onChange={(event) => setNumber('shadow.spread', Number(event.target.value))}
+                />
+              </label>
+              <label>
+                Color
+                <input
+                  type="text"
+                  value={config.shadow.color}
+                  onChange={(event) => setString('shadow.color', event.target.value)}
+                />
+              </label>
+            </div>
+          </section>
+
+          <section className="panel">
+            <h2>Animation Preset</h2>
+            <div className="grid two">
+              <label>
+                Preset
+                <select
+                  value={config.animation.preset}
+                  onChange={(event) => setString('animation.preset', event.target.value as AnimationPreset)}
+                >
+                  <option value="none">none</option>
+                  <option value="fade">fade</option>
+                  <option value="pulse">pulse</option>
+                  <option value="slide">slide</option>
+                </select>
+              </label>
+              <label>
+                Duration (s)
+                <input
+                  type="number"
+                  value={config.animation.duration}
+                  min={0.1}
+                  max={120}
+                  step={0.1}
+                  onChange={(event) => setNumber('animation.duration', Number(event.target.value))}
+                />
+              </label>
+              <label>
+                Delay (s)
+                <input
+                  type="number"
+                  value={config.animation.delay}
+                  min={0}
+                  max={60}
+                  step={0.1}
+                  onChange={(event) => setNumber('animation.delay', Number(event.target.value))}
+                />
+              </label>
+              <label>
+                Iterations (0 = infinite)
+                <input
+                  type="number"
+                  value={config.animation.iterations}
+                  min={0}
+                  max={1000}
+                  step={1}
+                  onChange={(event) => setNumber('animation.iterations', Number(event.target.value))}
+                />
+              </label>
+              <label>
+                Slide Direction
+                <select
+                  value={config.animation.slideDirection}
+                  onChange={(event) => setString('animation.slideDirection', event.target.value as SlideDirection)}
+                >
+                  <option value="left">left</option>
+                  <option value="right">right</option>
+                  <option value="up">up</option>
+                  <option value="down">down</option>
+                </select>
+              </label>
+              <label>
+                Slide Distance (px)
+                <input
+                  type="number"
+                  value={config.animation.slideDistance}
+                  min={0}
+                  max={2000}
+                  step={1}
+                  onChange={(event) => setNumber('animation.slideDistance', Number(event.target.value))}
+                />
+              </label>
+              <label>
+                Pulse Scale
+                <input
+                  type="number"
+                  value={config.animation.pulseScale}
+                  min={1}
+                  max={3}
+                  step={0.01}
+                  onChange={(event) => setNumber('animation.pulseScale', Number(event.target.value))}
+                />
+              </label>
+              <label className="checkbox">
+                <input
+                  type="checkbox"
+                  checked={config.animation.alternate}
+                  onChange={(event) => setBoolean('animation.alternate', event.target.checked)}
+                />
+                Alternate
+              </label>
+            </div>
+          </section>
+
+          <section className="panel">
+            <h2>Scroll</h2>
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={config.scroll.enabled}
+                onChange={(event) => setBoolean('scroll.enabled', event.target.checked)}
+              />
+              スクロールを有効化
+            </label>
+            <div className="grid two">
+              <label>
+                Direction
+                <select
+                  value={config.scroll.direction}
+                  onChange={(event) => setString('scroll.direction', event.target.value as ScrollDirection)}
+                >
+                  <option value="left">left</option>
+                  <option value="right">right</option>
+                  <option value="up">up</option>
+                  <option value="down">down</option>
+                </select>
+              </label>
+              <label>
+                Speed (1-40)
+                <input
+                  type="number"
+                  value={config.scroll.speed}
+                  min={1}
+                  max={40}
+                  step={1}
+                  onChange={(event) => setNumber('scroll.speed', Number(event.target.value))}
+                />
+              </label>
+              <label>
+                Gap (px)
+                <input
+                  type="number"
+                  value={config.scroll.gap}
+                  min={0}
+                  max={600}
+                  step={1}
+                  onChange={(event) => setNumber('scroll.gap', Number(event.target.value))}
+                />
+              </label>
+            </div>
+          </section>
+
+          <section className="panel">
+            <h2>Blink</h2>
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={config.blink.enabled}
+                onChange={(event) => setBoolean('blink.enabled', event.target.checked)}
+              />
+              点滅を有効化
+            </label>
+            <div className="grid two">
+              <label>
+                Period (s)
+                <input
+                  type="number"
+                  value={config.blink.period}
+                  min={0.1}
+                  max={30}
+                  step={0.1}
+                  onChange={(event) => setNumber('blink.period', Number(event.target.value))}
+                />
+              </label>
+              <label>
+                Duty Cycle (0.05-1.0)
+                <input
+                  type="number"
+                  value={config.blink.dutyCycle}
+                  min={0.05}
+                  max={1}
+                  step={0.05}
+                  onChange={(event) => setNumber('blink.dutyCycle', Number(event.target.value))}
+                />
+              </label>
+            </div>
+          </section>
+        </div>
+
+        <aside className="editor-preview-column">
+          <section className="panel preview-panel">
+            <h2>Live Preview</h2>
+            <div className="preview-toolbar">
+              <label>
+                Size
+                <select value={previewSize} onChange={(event) => setPreviewSize(event.target.value as PreviewSize)}>
+                  {PREVIEW_SIZE_OPTIONS.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Background
+                <select
+                  value={previewBackground}
+                  onChange={(event) => setPreviewBackground(event.target.value as PreviewBackground)}
+                >
+                  {PREVIEW_BACKGROUND_OPTIONS.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <p className="preview-meta">
+              {selectedPreviewSize.width} x {selectedPreviewSize.height}
+            </p>
+            <div
+              className={`preview-stage preview-bg-${previewBackground}`}
+              style={{ aspectRatio: `${selectedPreviewSize.width} / ${selectedPreviewSize.height}` }}
             >
-              <option value="left">left</option>
-              <option value="center">center</option>
-              <option value="right">right</option>
-            </select>
-          </label>
-          <label>
-            Vertical Align
-            <select
-              value={config.verticalAlign}
-              onChange={(event) => setString('verticalAlign', event.target.value as VerticalAlign)}
-            >
-              <option value="top">top</option>
-              <option value="center">center</option>
-              <option value="bottom">bottom</option>
-            </select>
-          </label>
-          <label>
-            Padding X
-            <input
-              type="number"
-              value={config.paddingX}
-              min={0}
-              max={400}
-              step={1}
-              onChange={(event) => setNumber('paddingX', Number(event.target.value))}
-            />
-          </label>
-          <label>
-            Padding Y
-            <input
-              type="number"
-              value={config.paddingY}
-              min={0}
-              max={400}
-              step={1}
-              onChange={(event) => setNumber('paddingY', Number(event.target.value))}
-            />
-          </label>
-        </div>
-      </section>
+              <div className="preview-canvas">
+                <TextEffectRenderer config={config} className="preview-render" />
+              </div>
+            </div>
+          </section>
 
-      <section className="panel">
-        <h2>Shadow</h2>
-        <label className="checkbox">
-          <input
-            type="checkbox"
-            checked={config.shadow.enabled}
-            onChange={(event) => setBoolean('shadow.enabled', event.target.checked)}
-          />
-          Shadowを有効化
-        </label>
-        <div className="grid two">
-          <label>
-            X
-            <input
-              type="number"
-              value={config.shadow.x}
-              min={-400}
-              max={400}
-              step={1}
-              onChange={(event) => setNumber('shadow.x', Number(event.target.value))}
-            />
-          </label>
-          <label>
-            Y
-            <input
-              type="number"
-              value={config.shadow.y}
-              min={-400}
-              max={400}
-              step={1}
-              onChange={(event) => setNumber('shadow.y', Number(event.target.value))}
-            />
-          </label>
-          <label>
-            Blur
-            <input
-              type="number"
-              value={config.shadow.blur}
-              min={0}
-              max={400}
-              step={1}
-              onChange={(event) => setNumber('shadow.blur', Number(event.target.value))}
-            />
-          </label>
-          <label>
-            Spread
-            <input
-              type="number"
-              value={config.shadow.spread}
-              min={-200}
-              max={200}
-              step={1}
-              onChange={(event) => setNumber('shadow.spread', Number(event.target.value))}
-            />
-          </label>
-          <label>
-            Color
-            <input type="text" value={config.shadow.color} onChange={(event) => setString('shadow.color', event.target.value)} />
-          </label>
-        </div>
-      </section>
+          <section className="panel">
+            <h2>Render URL</h2>
+            <textarea value={renderUrl} readOnly rows={4} />
+            <div className="actions">
+              <button type="button" onClick={copyUrl}>
+                {copied ? 'Copied' : 'Copy URL'}
+              </button>
+              <a href={renderUrl} target="_blank" rel="noreferrer">
+                Preview Render
+              </a>
+            </div>
+            <p className="hint">
+              OBS側のカスタムCSS変数で `--te-text` を設定すると、URL指定より優先して文字列を上書きできます。
+            </p>
+          </section>
 
-      <section className="panel">
-        <h2>Animation Preset</h2>
-        <div className="grid two">
-          <label>
-            Preset
-            <select
-              value={config.animation.preset}
-              onChange={(event) => setString('animation.preset', event.target.value as AnimationPreset)}
-            >
-              <option value="none">none</option>
-              <option value="fade">fade</option>
-              <option value="pulse">pulse</option>
-              <option value="slide">slide</option>
-            </select>
-          </label>
-          <label>
-            Duration (s)
-            <input
-              type="number"
-              value={config.animation.duration}
-              min={0.1}
-              max={120}
-              step={0.1}
-              onChange={(event) => setNumber('animation.duration', Number(event.target.value))}
-            />
-          </label>
-          <label>
-            Delay (s)
-            <input
-              type="number"
-              value={config.animation.delay}
-              min={0}
-              max={60}
-              step={0.1}
-              onChange={(event) => setNumber('animation.delay', Number(event.target.value))}
-            />
-          </label>
-          <label>
-            Iterations (0 = infinite)
-            <input
-              type="number"
-              value={config.animation.iterations}
-              min={0}
-              max={1000}
-              step={1}
-              onChange={(event) => setNumber('animation.iterations', Number(event.target.value))}
-            />
-          </label>
-          <label>
-            Slide Direction
-            <select
-              value={config.animation.slideDirection}
-              onChange={(event) => setString('animation.slideDirection', event.target.value as SlideDirection)}
-            >
-              <option value="left">left</option>
-              <option value="right">right</option>
-              <option value="up">up</option>
-              <option value="down">down</option>
-            </select>
-          </label>
-          <label>
-            Slide Distance (px)
-            <input
-              type="number"
-              value={config.animation.slideDistance}
-              min={0}
-              max={2000}
-              step={1}
-              onChange={(event) => setNumber('animation.slideDistance', Number(event.target.value))}
-            />
-          </label>
-          <label>
-            Pulse Scale
-            <input
-              type="number"
-              value={config.animation.pulseScale}
-              min={1}
-              max={3}
-              step={0.01}
-              onChange={(event) => setNumber('animation.pulseScale', Number(event.target.value))}
-            />
-          </label>
-          <label className="checkbox">
-            <input
-              type="checkbox"
-              checked={config.animation.alternate}
-              onChange={(event) => setBoolean('animation.alternate', event.target.checked)}
-            />
-            Alternate
-          </label>
-        </div>
-      </section>
-
-      <section className="panel">
-        <h2>Scroll</h2>
-        <label className="checkbox">
-          <input
-            type="checkbox"
-            checked={config.scroll.enabled}
-            onChange={(event) => setBoolean('scroll.enabled', event.target.checked)}
-          />
-          スクロールを有効化
-        </label>
-        <div className="grid two">
-          <label>
-            Direction
-            <select value={config.scroll.direction} onChange={(event) => setString('scroll.direction', event.target.value as ScrollDirection)}>
-              <option value="left">left</option>
-              <option value="right">right</option>
-              <option value="up">up</option>
-              <option value="down">down</option>
-            </select>
-          </label>
-          <label>
-            Speed (1-40)
-            <input
-              type="number"
-              value={config.scroll.speed}
-              min={1}
-              max={40}
-              step={1}
-              onChange={(event) => setNumber('scroll.speed', Number(event.target.value))}
-            />
-          </label>
-          <label>
-            Gap (px)
-            <input
-              type="number"
-              value={config.scroll.gap}
-              min={0}
-              max={600}
-              step={1}
-              onChange={(event) => setNumber('scroll.gap', Number(event.target.value))}
-            />
-          </label>
-        </div>
-      </section>
-
-      <section className="panel">
-        <h2>Blink</h2>
-        <label className="checkbox">
-          <input
-            type="checkbox"
-            checked={config.blink.enabled}
-            onChange={(event) => setBoolean('blink.enabled', event.target.checked)}
-          />
-          点滅を有効化
-        </label>
-        <div className="grid two">
-          <label>
-            Period (s)
-            <input
-              type="number"
-              value={config.blink.period}
-              min={0.1}
-              max={30}
-              step={0.1}
-              onChange={(event) => setNumber('blink.period', Number(event.target.value))}
-            />
-          </label>
-          <label>
-            Duty Cycle (0.05-1.0)
-            <input
-              type="number"
-              value={config.blink.dutyCycle}
-              min={0.05}
-              max={1}
-              step={0.05}
-              onChange={(event) => setNumber('blink.dutyCycle', Number(event.target.value))}
-            />
-          </label>
-        </div>
-      </section>
-
-      <section className="panel">
-        <h2>Render URL</h2>
-        <textarea value={renderUrl} readOnly rows={4} />
-        <div className="actions">
-          <button type="button" onClick={copyUrl}>
-            {copied ? 'Copied' : 'Copy URL'}
-          </button>
-          <a href={renderUrl} target="_blank" rel="noreferrer">
-            Preview Render
-          </a>
-        </div>
-        <p className="hint">OBS側のカスタムCSS変数で `--te-text` を設定すると、URL指定より優先して文字列を上書きできます。</p>
-      </section>
-
-      <section className="panel">
-        <h2>OBS CSS Variable Examples</h2>
-        <pre>
+          <section className="panel">
+            <h2>OBS CSS Variable Examples</h2>
+            <pre>
 {`--te-text: "Override from OBS";
 --te-color: #ffcc00;
 --te-font-size: 80;
@@ -739,23 +828,19 @@ function EditorPage(): ReactElement {
 --te-scroll-direction: left;
 --te-scroll-speed: 12;
 --te-blink-enabled: true;`}
-        </pre>
-      </section>
+            </pre>
+          </section>
+        </aside>
+      </div>
     </main>
   )
 }
 
-function RenderPage({ baseConfig }: { baseConfig: TextEffectConfig }): ReactElement {
-  const [config, setConfig] = useState(baseConfig)
+function TextEffectRenderer({ config, className }: { config: TextEffectConfig; className?: string }): ReactElement {
   const [blinkVisible, setBlinkVisible] = useState(true)
 
   useEffect(() => {
-    setConfig(applyCssOverrides(baseConfig))
-  }, [baseConfig])
-
-  useEffect(() => {
     if (!config.blink.enabled) {
-      setBlinkVisible(true)
       return
     }
 
@@ -778,6 +863,8 @@ function RenderPage({ baseConfig }: { baseConfig: TextEffectConfig }): ReactElem
       }
     }
   }, [config.blink.enabled, config.blink.period, config.blink.dutyCycle])
+
+  const effectiveBlinkVisible = config.blink.enabled ? blinkVisible : true
 
   const { animationName, customVars } = useMemo(() => {
     if (config.animation.preset === 'none') {
@@ -824,7 +911,7 @@ function RenderPage({ baseConfig }: { baseConfig: TextEffectConfig }): ReactElem
       : 'none',
     backgroundColor: config.backgroundColor,
     padding: `${config.paddingY}px ${config.paddingX}px`,
-    opacity: blinkVisible ? 1 : 0,
+    opacity: effectiveBlinkVisible ? 1 : 0,
     animationName,
     animationDuration: animationName ? `${config.animation.duration}s` : undefined,
     animationDelay: animationName ? `${config.animation.delay}s` : undefined,
@@ -840,14 +927,15 @@ function RenderPage({ baseConfig }: { baseConfig: TextEffectConfig }): ReactElem
   }
 
   const alignClass = `align-h-${config.horizontalAlign} align-v-${config.verticalAlign}`
+  const containerClassName = className ? `render-page ${alignClass} ${className}` : `render-page ${alignClass}`
 
   if (!config.scroll.enabled) {
     return (
-      <main className={`render-page ${alignClass}`}>
+      <div className={containerClassName}>
         <div className="effect-text" style={baseTextStyle}>
           {config.text}
         </div>
-      </main>
+      </div>
     )
   }
 
@@ -855,7 +943,7 @@ function RenderPage({ baseConfig }: { baseConfig: TextEffectConfig }): ReactElem
   const duration = clamp(48 / config.scroll.speed, 1.2, 60)
 
   return (
-    <main className={`render-page ${alignClass}`}>
+    <div className={containerClassName}>
       <div className="scroll-viewport" data-axis={isHorizontal ? 'x' : 'y'}>
         <div
           className={`scroll-track dir-${config.scroll.direction}`}
@@ -872,6 +960,20 @@ function RenderPage({ baseConfig }: { baseConfig: TextEffectConfig }): ReactElem
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function RenderPage({ baseConfig }: { baseConfig: TextEffectConfig }): ReactElement {
+  const [config, setConfig] = useState(() => applyCssOverrides(baseConfig))
+
+  useEffect(() => {
+    setConfig(applyCssOverrides(baseConfig))
+  }, [baseConfig])
+
+  return (
+    <main className="render-root">
+      <TextEffectRenderer config={config} />
     </main>
   )
 }

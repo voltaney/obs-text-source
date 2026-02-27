@@ -1,75 +1,83 @@
-# React + TypeScript + Vite
+# texteffect-editor
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+OBS の Browser Source で表示するテキスト演出用の URL を作成するエディタです。  
+エディタ画面で見た目を調整し、生成された `mode=render` URL を OBS に設定して使用します。
 
-Currently, two official plugins are available:
+## 主な機能
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- テキスト内容、色、背景色、フォント、サイズ、太さ、文字間隔、縁取り、余白の調整
+- シャドウの有効/無効と詳細パラメータ調整
+- アニメーション（なし / フェード / パルス / スライド）
+- スクロール（方向・速度・間隔）
+- 点滅（周期・点灯率）
+- ライブプレビュー（解像度・背景切替）
+- 設定を埋め込んだレンダー URL 生成とコピー
 
-## React Compiler
+## 動作モード
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+- エディタモード:
+  - 通常アクセス（`/`）で表示
+  - 設定 UI とライブプレビューを提供
+- レンダーモード:
+  - `?mode=render&cfg=...` で表示
+  - OBS の Browser Source にはこの URL を設定
 
-Note: This will impact Vite dev & build performances.
+`cfg` には設定 JSON を Base64URL 形式でエンコードした値が入ります。
 
-## Expanding the ESLint configuration
+## セットアップ
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+前提:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- Node.js 20 以上推奨
+- pnpm
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+pnpm install
+pnpm dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+起動後、表示された URL（例: `http://localhost:5173`）を開いてエディタを使用します。
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## OBS での使い方
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+1. エディタで見た目を調整する
+2. 「レンダーURL」の値をコピーする
+3. OBS で Browser Source を追加する
+4. URL にコピーしたレンダー URL を設定する
+5. 必要に応じて幅・高さを配信解像度に合わせる
+
+## OBS カスタム CSS での上書き
+
+OBS 側のカスタム CSS で CSS 変数を指定すると、URL の設定より優先して上書きできます。  
+特に `--te-text` は運用時のテキスト差し替えに便利です。
+
+例:
+
+```css
+--te-text: "Override from OBS";
+--te-color: #ffcc00;
+--te-color-opacity: 1;
+--te-font-family: "'Yu Gothic', sans-serif";
+--te-font-size: 80;
+--te-shadow-enabled: true;
+--te-animation-preset: pulse;
+--te-scroll-enabled: true;
+--te-scroll-direction: left;
+--te-scroll-speed: 12;
+--te-blink-enabled: true;
 ```
+
+## 開発コマンド
+
+```bash
+pnpm dev      # 開発サーバー起動
+pnpm build    # TypeScript チェック + ビルド
+pnpm preview  # ビルド結果のローカル確認
+pnpm lint     # ESLint
+```
+
+## 注意事項
+
+- Web フォントの配信は行っていません。表示可否は実行環境（OBS を動かしている OS）にインストールされたフォントへ依存します。
+- フォント設定はエディタの候補リストから選択する前提です。未定義の値が渡された場合は既定値へフォールバックします。
+- Browser Source のキャッシュ挙動により、変更反映に再読み込みが必要な場合があります。

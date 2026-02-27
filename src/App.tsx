@@ -340,6 +340,16 @@ function hexToRgba(color: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${clamp(alpha, 0, 1)})`
 }
 
+function buildTextShadow(config: TextEffectConfig): string {
+  if (!config.shadow.enabled) {
+    return 'none'
+  }
+
+  const color = hexToRgba(config.shadow.color, config.shadow.opacity)
+  const effectiveBlur = clamp(config.shadow.blur + config.shadow.spread, 0, 400)
+  return `${config.shadow.x}px ${config.shadow.y}px ${effectiveBlur}px ${color}`
+}
+
 function parseChoice<T extends string>(value: unknown, choices: readonly T[], fallback: T): T {
   return typeof value === 'string' && choices.includes(value as T) ? (value as T) : fallback
 }
@@ -1232,9 +1242,7 @@ function TextEffectRenderer({ config, className }: { config: TextEffectConfig; c
     fontWeight: config.fontWeight,
     letterSpacing: `${config.letterSpacing}px`,
     WebkitTextStroke: `${config.strokeWidth}px ${hexToRgba(config.strokeColor, config.strokeOpacity)}`,
-    textShadow: config.shadow.enabled
-      ? `${config.shadow.x}px ${config.shadow.y}px ${config.shadow.blur}px ${config.shadow.spread}px ${hexToRgba(config.shadow.color, config.shadow.opacity)}`
-      : 'none',
+    textShadow: buildTextShadow(config),
     backgroundColor: hexToRgba(config.backgroundColor, config.backgroundOpacity),
     padding: `${config.paddingY}px ${config.paddingX}px`,
     opacity: effectiveBlinkVisible ? 1 : 0,

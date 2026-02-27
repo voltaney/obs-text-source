@@ -257,6 +257,14 @@ button,
   color: #34514a;
 }
 
+.import-status.is-error {
+  color: #a02020;
+}
+
+.import-status.is-ok {
+  color: #1d6b34;
+}
+
 pre {
   margin: 0;
   white-space: pre-wrap;

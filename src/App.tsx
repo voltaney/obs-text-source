@@ -426,11 +426,7 @@ function encodeConfig(config: TextEffectConfig): string {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
 }
 
-function decodeConfig(cfg: string | null): TextEffectConfig {
-  if (!cfg) {
-    return DEFAULT_CONFIG
-  }
-
+function tryDecodeConfigValue(cfg: string): TextEffectConfig | undefined {
   try {
     const normalized = cfg.replace(/-/g, '+').replace(/_/g, '/')
     const paddingLength = (4 - (normalized.length % 4)) % 4
@@ -440,8 +436,52 @@ function decodeConfig(cfg: string | null): TextEffectConfig {
     const parsed = JSON.parse(new TextDecoder().decode(bytes))
     return sanitizeConfig(parsed)
   } catch {
+    return undefined
+  }
+}
+
+function decodeConfig(cfg: string | null): TextEffectConfig {
+  if (!cfg) {
     return DEFAULT_CONFIG
   }
+
+  return tryDecodeConfigValue(cfg) ?? DEFAULT_CONFIG
+}
+
+function parseConfigFromPastedRenderUrl(rawInput: string): TextEffectConfig | undefined {
+  const trimmed = rawInput.trim()
+  if (trimmed.length === 0) {
+    return undefined
+  }
+
+  const candidates: string[] = []
+
+  try {
+    const parsedUrl = new URL(trimmed, window.location.origin)
+    const cfg = parsedUrl.searchParams.get('cfg')
+    if (cfg) {
+      candidates.push(cfg)
+    }
+  } catch {
+    // no-op
+  }
+
+  const params = new URLSearchParams(trimmed.startsWith('?') ? trimmed.slice(1) : trimmed)
+  const cfgFromParams = params.get('cfg')
+  if (cfgFromParams) {
+    candidates.push(cfgFromParams)
+  }
+
+  candidates.push(trimmed)
+
+  for (const candidate of candidates) {
+    const decoded = tryDecodeConfigValue(candidate)
+    if (decoded) {
+      return decoded
+    }
+  }
+
+  return undefined
 }
 
 function stripQuotes(value: string): string {
@@ -597,6 +637,8 @@ function EditorPage(): ReactElement {
   const [copied, setCopied] = useState(false)
   const [previewSize, setPreviewSize] = useState<PreviewSize>('1920x1080')
   const [previewBackground, setPreviewBackground] = useState<PreviewBackground>('checker')
+  const [importSourceUrl, setImportSourceUrl] = useState('')
+  const [importStatus, setImportStatus] = useState<{ type: 'ok' | 'error'; message: string } | null>(null)
 
   const renderUrl = useMemo(() => {
     const url = new URL(window.location.href)
@@ -639,6 +681,20 @@ function EditorPage(): ReactElement {
     await navigator.clipboard.writeText(renderUrl)
     setCopied(true)
     window.setTimeout(() => setCopied(false), 1500)
+  }
+
+  const importFromRenderUrl = () => {
+    const imported = parseConfigFromPastedRenderUrl(importSourceUrl)
+    if (!imported) {
+      setImportStatus({
+        type: 'error',
+        message: 'URLの解析に失敗しました。mode=render&cfg=... のURLを貼り付けてください。',
+      })
+      return
+    }
+
+    setConfig(imported)
+    setImportStatus({ type: 'ok', message: '設定を読み込みました。' })
   }
 
   return (
@@ -1085,6 +1141,23 @@ function EditorPage(): ReactElement {
             <p className="hint">
               OBS側のカスタムCSS変数で `--te-text` を設定すると、URL指定より優先して文字列を上書きできます。
             </p>
+            <label>
+              既存のレンダーURLから設定を読み込む
+              <textarea
+                value={importSourceUrl}
+                onChange={(event) => setImportSourceUrl(event.target.value)}
+                placeholder="https://example.com/?mode=render&cfg=..."
+                rows={3}
+              />
+            </label>
+            <div className="actions">
+              <button type="button" onClick={importFromRenderUrl}>
+                URLから読み込む
+              </button>
+            </div>
+            {importStatus && (
+              <p className={`hint import-status ${importStatus.type === 'error' ? 'is-error' : 'is-ok'}`}>{importStatus.message}</p>
+            )}
           </section>
 
           <details className="panel accordion-panel">

@@ -12,13 +12,17 @@ type PreviewBackground = 'checker' | 'dark' | 'light' | 'transparent'
 
 interface TextEffectConfig {
   text: string
+  fontFamily: string
   color: string
+  colorOpacity: number
   fontSize: number
   fontWeight: number
   letterSpacing: number
   strokeWidth: number
   strokeColor: string
+  strokeOpacity: number
   backgroundColor: string
+  backgroundOpacity: number
   paddingX: number
   paddingY: number
   horizontalAlign: HorizontalAlign
@@ -30,6 +34,7 @@ interface TextEffectConfig {
     blur: number
     spread: number
     color: string
+    opacity: number
   }
   animation: {
     preset: AnimationPreset
@@ -56,13 +61,17 @@ interface TextEffectConfig {
 
 const DEFAULT_CONFIG: TextEffectConfig = {
   text: 'Sample Text',
+  fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif",
   color: '#ffffff',
+  colorOpacity: 1,
   fontSize: 72,
   fontWeight: 700,
   letterSpacing: 1,
   strokeWidth: 0,
   strokeColor: '#000000',
-  backgroundColor: 'transparent',
+  strokeOpacity: 1,
+  backgroundColor: '#000000',
+  backgroundOpacity: 0,
   paddingX: 0,
   paddingY: 0,
   horizontalAlign: 'center',
@@ -73,7 +82,8 @@ const DEFAULT_CONFIG: TextEffectConfig = {
     y: 2,
     blur: 8,
     spread: 0,
-    color: 'rgba(0, 0, 0, 0.7)',
+    color: '#000000',
+    opacity: 0.7,
   },
   animation: {
     preset: 'none',
@@ -99,6 +109,73 @@ const DEFAULT_CONFIG: TextEffectConfig = {
 }
 
 const BOOLEAN_TRUE_SET = new Set(['1', 'true', 'yes', 'on'])
+const HEX_COLOR_PATTERN = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i
+
+const FONT_FAMILY_OPTIONS: ReadonlyArray<{
+  label: string
+  value: string
+  language: 'ja' | 'en'
+}> = [
+  {
+    label: '日本語サンプル - Noto Sans JP',
+    value: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif",
+    language: 'ja',
+  },
+  {
+    label: '日本語サンプル - Yu Gothic',
+    value: "'Yu Gothic', 'Hiragino Kaku Gothic ProN', sans-serif",
+    language: 'ja',
+  },
+  {
+    label: '日本語サンプル - Meiryo',
+    value: "'Meiryo', 'Hiragino Kaku Gothic ProN', sans-serif",
+    language: 'ja',
+  },
+  {
+    label: '日本語サンプル - Noto Serif JP',
+    value: "'Noto Serif JP', 'Hiragino Mincho ProN', serif",
+    language: 'ja',
+  },
+  {
+    label: 'English Sample - Inter',
+    value: "'Inter', 'Segoe UI', sans-serif",
+    language: 'en',
+  },
+  {
+    label: 'English Sample - Montserrat',
+    value: "'Montserrat', 'Segoe UI', sans-serif",
+    language: 'en',
+  },
+  {
+    label: 'English Sample - Oswald',
+    value: "'Oswald', 'Arial Narrow', sans-serif",
+    language: 'en',
+  },
+  {
+    label: 'English Sample - Georgia',
+    value: "'Georgia', 'Times New Roman', serif",
+    language: 'en',
+  },
+  {
+    label: 'English Sample - Cascadia Mono',
+    value: "'Cascadia Mono', 'Consolas', monospace",
+    language: 'en',
+  },
+]
+
+const FONT_WEIGHT_OPTIONS: ReadonlyArray<{ value: number; label: string }> = [
+  { value: 100, label: '100 Thin' },
+  { value: 200, label: '200 Extra Light' },
+  { value: 300, label: '300 Light' },
+  { value: 400, label: '400 Regular' },
+  { value: 500, label: '500 Medium' },
+  { value: 600, label: '600 Semi Bold' },
+  { value: 700, label: '700 Bold' },
+  { value: 800, label: '800 Extra Bold' },
+  { value: 900, label: '900 Black' },
+]
+
+const FONT_FAMILY_VALUES = FONT_FAMILY_OPTIONS.map((option) => option.value) as readonly string[]
 
 const PREVIEW_SIZE_OPTIONS: ReadonlyArray<{
   id: PreviewSize
@@ -115,10 +192,10 @@ const PREVIEW_BACKGROUND_OPTIONS: ReadonlyArray<{
   id: PreviewBackground
   label: string
 }> = [
-  { id: 'checker', label: 'Checker' },
-  { id: 'dark', label: 'Dark' },
-  { id: 'light', label: 'Light' },
-  { id: 'transparent', label: 'Transparent' },
+  { id: 'checker', label: 'チェック' },
+  { id: 'dark', label: '暗色' },
+  { id: 'light', label: '明色' },
+  { id: 'transparent', label: '透過' },
 ]
 
 function clamp(value: number, min: number, max: number): number {
@@ -153,6 +230,31 @@ function parseString(value: unknown, fallback: string): string {
   return typeof value === 'string' && value.length > 0 ? value : fallback
 }
 
+function normalizeHexColor(value: string): string | undefined {
+  if (!HEX_COLOR_PATTERN.test(value)) {
+    return undefined
+  }
+  if (value.length === 4) {
+    return `#${value[1]}${value[1]}${value[2]}${value[2]}${value[3]}${value[3]}`.toLowerCase()
+  }
+  return value.toLowerCase()
+}
+
+function parseColor(value: unknown, fallback: string): string {
+  if (typeof value !== 'string') {
+    return fallback
+  }
+  return normalizeHexColor(value) ?? fallback
+}
+
+function hexToRgba(color: string, alpha: number): string {
+  const normalized = normalizeHexColor(color) ?? '#000000'
+  const r = Number.parseInt(normalized.slice(1, 3), 16)
+  const g = Number.parseInt(normalized.slice(3, 5), 16)
+  const b = Number.parseInt(normalized.slice(5, 7), 16)
+  return `rgba(${r}, ${g}, ${b}, ${clamp(alpha, 0, 1)})`
+}
+
 function parseChoice<T extends string>(value: unknown, choices: readonly T[], fallback: T): T {
   return typeof value === 'string' && choices.includes(value as T) ? (value as T) : fallback
 }
@@ -167,13 +269,17 @@ function sanitizeConfig(raw: unknown): TextEffectConfig {
 
   return {
     text: parseString(source.text, DEFAULT_CONFIG.text),
-    color: parseString(source.color, DEFAULT_CONFIG.color),
+    fontFamily: parseChoice(source.fontFamily, FONT_FAMILY_VALUES, DEFAULT_CONFIG.fontFamily),
+    color: parseColor(source.color, DEFAULT_CONFIG.color),
+    colorOpacity: parseNumber(source.colorOpacity, DEFAULT_CONFIG.colorOpacity, 0, 1),
     fontSize: parseNumber(source.fontSize, DEFAULT_CONFIG.fontSize, 8, 320),
     fontWeight: parseNumber(source.fontWeight, DEFAULT_CONFIG.fontWeight, 100, 900),
     letterSpacing: parseNumber(source.letterSpacing, DEFAULT_CONFIG.letterSpacing, -12, 30),
     strokeWidth: parseNumber(source.strokeWidth, DEFAULT_CONFIG.strokeWidth, 0, 30),
-    strokeColor: parseString(source.strokeColor, DEFAULT_CONFIG.strokeColor),
-    backgroundColor: parseString(source.backgroundColor, DEFAULT_CONFIG.backgroundColor),
+    strokeColor: parseColor(source.strokeColor, DEFAULT_CONFIG.strokeColor),
+    strokeOpacity: parseNumber(source.strokeOpacity, DEFAULT_CONFIG.strokeOpacity, 0, 1),
+    backgroundColor: parseColor(source.backgroundColor, DEFAULT_CONFIG.backgroundColor),
+    backgroundOpacity: parseNumber(source.backgroundOpacity, DEFAULT_CONFIG.backgroundOpacity, 0, 1),
     paddingX: parseNumber(source.paddingX, DEFAULT_CONFIG.paddingX, 0, 400),
     paddingY: parseNumber(source.paddingY, DEFAULT_CONFIG.paddingY, 0, 400),
     horizontalAlign: parseChoice(source.horizontalAlign, ['left', 'center', 'right'] as const, DEFAULT_CONFIG.horizontalAlign),
@@ -184,7 +290,8 @@ function sanitizeConfig(raw: unknown): TextEffectConfig {
       y: parseNumber(shadowSource.y, DEFAULT_CONFIG.shadow.y, -400, 400),
       blur: parseNumber(shadowSource.blur, DEFAULT_CONFIG.shadow.blur, 0, 400),
       spread: parseNumber(shadowSource.spread, DEFAULT_CONFIG.shadow.spread, -200, 200),
-      color: parseString(shadowSource.color, DEFAULT_CONFIG.shadow.color),
+      color: parseColor(shadowSource.color, DEFAULT_CONFIG.shadow.color),
+      opacity: parseNumber(shadowSource.opacity, DEFAULT_CONFIG.shadow.opacity, 0, 1),
     },
     animation: {
       preset: parseChoice(animationSource.preset, ['none', 'fade', 'pulse', 'slide'] as const, DEFAULT_CONFIG.animation.preset),
@@ -270,19 +377,24 @@ function applyCssOverrides(base: TextEffectConfig): TextEffectConfig {
   const rootStyle = getComputedStyle(document.documentElement)
 
   const text = stripQuotes(rootStyle.getPropertyValue('--te-text'))
+  const fontFamily = stripQuotes(rootStyle.getPropertyValue('--te-font-family'))
   const color = stripQuotes(rootStyle.getPropertyValue('--te-color'))
+  const colorOpacity = stripQuotes(rootStyle.getPropertyValue('--te-color-opacity'))
   const fontSize = stripQuotes(rootStyle.getPropertyValue('--te-font-size'))
   const fontWeight = stripQuotes(rootStyle.getPropertyValue('--te-font-weight'))
   const letterSpacing = stripQuotes(rootStyle.getPropertyValue('--te-letter-spacing'))
   const strokeWidth = stripQuotes(rootStyle.getPropertyValue('--te-stroke-width'))
   const strokeColor = stripQuotes(rootStyle.getPropertyValue('--te-stroke-color'))
+  const strokeOpacity = stripQuotes(rootStyle.getPropertyValue('--te-stroke-opacity'))
   const backgroundColor = stripQuotes(rootStyle.getPropertyValue('--te-background-color'))
+  const backgroundOpacity = stripQuotes(rootStyle.getPropertyValue('--te-background-opacity'))
   const shadowEnabled = stripQuotes(rootStyle.getPropertyValue('--te-shadow-enabled'))
   const shadowX = stripQuotes(rootStyle.getPropertyValue('--te-shadow-x'))
   const shadowY = stripQuotes(rootStyle.getPropertyValue('--te-shadow-y'))
   const shadowBlur = stripQuotes(rootStyle.getPropertyValue('--te-shadow-blur'))
   const shadowSpread = stripQuotes(rootStyle.getPropertyValue('--te-shadow-spread'))
   const shadowColor = stripQuotes(rootStyle.getPropertyValue('--te-shadow-color'))
+  const shadowOpacity = stripQuotes(rootStyle.getPropertyValue('--te-shadow-opacity'))
   const animationPreset = stripQuotes(rootStyle.getPropertyValue('--te-animation-preset'))
   const animationDuration = stripQuotes(rootStyle.getPropertyValue('--te-animation-duration'))
   const scrollEnabled = stripQuotes(rootStyle.getPropertyValue('--te-scroll-enabled'))
@@ -295,13 +407,17 @@ function applyCssOverrides(base: TextEffectConfig): TextEffectConfig {
   return sanitizeConfig({
     ...base,
     text: text || base.text,
+    fontFamily: fontFamily || base.fontFamily,
     color: color || base.color,
+    colorOpacity: colorOpacity || base.colorOpacity,
     fontSize: fontSize || base.fontSize,
     fontWeight: fontWeight || base.fontWeight,
     letterSpacing: letterSpacing || base.letterSpacing,
     strokeWidth: strokeWidth || base.strokeWidth,
     strokeColor: strokeColor || base.strokeColor,
+    strokeOpacity: strokeOpacity || base.strokeOpacity,
     backgroundColor: backgroundColor || base.backgroundColor,
+    backgroundOpacity: backgroundOpacity || base.backgroundOpacity,
     shadow: {
       ...base.shadow,
       enabled: shadowEnabled || base.shadow.enabled,
@@ -310,6 +426,7 @@ function applyCssOverrides(base: TextEffectConfig): TextEffectConfig {
       blur: shadowBlur || base.shadow.blur,
       spread: shadowSpread || base.shadow.spread,
       color: shadowColor || base.shadow.color,
+      opacity: shadowOpacity || base.shadow.opacity,
     },
     animation: {
       ...base.animation,
@@ -339,6 +456,45 @@ function getRenderConfigFromLocation(search: string): TextEffectConfig {
 function isRenderMode(search: string): boolean {
   const params = new URLSearchParams(search)
   return params.get('mode') === 'render'
+}
+
+function ColorWithAlphaField({
+  label,
+  color,
+  opacity,
+  onColorChange,
+  onOpacityChange,
+}: {
+  label: string
+  color: string
+  opacity: number
+  onColorChange: (value: string) => void
+  onOpacityChange: (value: number) => void
+}): ReactElement {
+  const rgbaValue = hexToRgba(color, opacity)
+  return (
+    <label>
+      {label}
+      <div className="color-control">
+        <div className="color-picker-row">
+          <input type="color" value={color} onChange={(event) => onColorChange(event.target.value)} />
+          <span className="color-code">{color.toUpperCase()}</span>
+        </div>
+        <div className="alpha-row">
+          <input
+            type="range"
+            value={opacity}
+            min={0}
+            max={1}
+            step={0.01}
+            onChange={(event) => onOpacityChange(Number(event.target.value))}
+          />
+          <span className="inline-value">{opacity.toFixed(2)}</span>
+        </div>
+        <span className="rgba-preview">{rgbaValue}</span>
+      </div>
+    </label>
+  )
 }
 
 function EditorPage(): ReactElement {
@@ -392,32 +548,53 @@ function EditorPage(): ReactElement {
 
   return (
     <main className="editor-page">
-      <h1>Text Effect URL Generator</h1>
+      <h1>テキストエフェクト URL 生成</h1>
       <p className="description">OBS Browser Source向けの透過テキストエフェクトURLを生成します。</p>
 
       <div className="editor-layout">
         <div className="editor-controls">
           <section className="panel">
-            <h2>Text</h2>
+            <h2>テキスト</h2>
             <label>
               表示文字
               <textarea value={config.text} onChange={(event) => setString('text', event.target.value)} rows={4} />
             </label>
             <div className="grid two">
+              <ColorWithAlphaField
+                label="文字色"
+                color={config.color}
+                opacity={config.colorOpacity}
+                onColorChange={(value) => setString('color', value)}
+                onOpacityChange={(value) => setNumber('colorOpacity', value)}
+              />
+              <ColorWithAlphaField
+                label="背景色"
+                color={config.backgroundColor}
+                opacity={config.backgroundOpacity}
+                onColorChange={(value) => setString('backgroundColor', value)}
+                onOpacityChange={(value) => setNumber('backgroundOpacity', value)}
+              />
               <label>
-                文字色
-                <input type="color" value={config.color} onChange={(event) => setString('color', event.target.value)} />
+                フォント
+                <select value={config.fontFamily} onChange={(event) => setString('fontFamily', event.target.value)}>
+                  <optgroup label="日本語対応フォント">
+                    {FONT_FAMILY_OPTIONS.filter((option) => option.language === 'ja').map((option) => (
+                      <option key={option.value} value={option.value} style={{ fontFamily: option.value }}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="英語向けフォント">
+                    {FONT_FAMILY_OPTIONS.filter((option) => option.language === 'en').map((option) => (
+                      <option key={option.value} value={option.value} style={{ fontFamily: option.value }}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
               </label>
               <label>
-                背景色
-                <input
-                  type="text"
-                  value={config.backgroundColor}
-                  onChange={(event) => setString('backgroundColor', event.target.value)}
-                />
-              </label>
-              <label>
-                Font Size
+                フォントサイズ
                 <input
                   type="number"
                   value={config.fontSize}
@@ -427,18 +604,20 @@ function EditorPage(): ReactElement {
                 />
               </label>
               <label>
-                Font Weight
-                <input
-                  type="number"
+                フォント太さ
+                <select
                   value={config.fontWeight}
-                  min={100}
-                  max={900}
-                  step={100}
                   onChange={(event) => setNumber('fontWeight', Number(event.target.value))}
-                />
+                >
+                  {FONT_WEIGHT_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label>
-                Letter Spacing
+                文字間隔
                 <input
                   type="number"
                   value={config.letterSpacing}
@@ -449,7 +628,7 @@ function EditorPage(): ReactElement {
                 />
               </label>
               <label>
-                Stroke Width
+                縁取り幅
                 <input
                   type="number"
                   value={config.strokeWidth}
@@ -459,38 +638,37 @@ function EditorPage(): ReactElement {
                   onChange={(event) => setNumber('strokeWidth', Number(event.target.value))}
                 />
               </label>
+              <ColorWithAlphaField
+                label="縁取り色"
+                color={config.strokeColor}
+                opacity={config.strokeOpacity}
+                onColorChange={(value) => setString('strokeColor', value)}
+                onOpacityChange={(value) => setNumber('strokeOpacity', value)}
+              />
               <label>
-                Stroke Color
-                <input
-                  type="text"
-                  value={config.strokeColor}
-                  onChange={(event) => setString('strokeColor', event.target.value)}
-                />
-              </label>
-              <label>
-                Horizontal Align
+                横位置
                 <select
                   value={config.horizontalAlign}
                   onChange={(event) => setString('horizontalAlign', event.target.value as HorizontalAlign)}
                 >
-                  <option value="left">left</option>
-                  <option value="center">center</option>
-                  <option value="right">right</option>
+                  <option value="left">左</option>
+                  <option value="center">中央</option>
+                  <option value="right">右</option>
                 </select>
               </label>
               <label>
-                Vertical Align
+                縦位置
                 <select
                   value={config.verticalAlign}
                   onChange={(event) => setString('verticalAlign', event.target.value as VerticalAlign)}
                 >
-                  <option value="top">top</option>
-                  <option value="center">center</option>
-                  <option value="bottom">bottom</option>
+                  <option value="top">上</option>
+                  <option value="center">中央</option>
+                  <option value="bottom">下</option>
                 </select>
               </label>
               <label>
-                Padding X
+                余白X
                 <input
                   type="number"
                   value={config.paddingX}
@@ -501,7 +679,7 @@ function EditorPage(): ReactElement {
                 />
               </label>
               <label>
-                Padding Y
+                余白Y
                 <input
                   type="number"
                   value={config.paddingY}
@@ -515,18 +693,18 @@ function EditorPage(): ReactElement {
           </section>
 
           <section className="panel">
-            <h2>Shadow</h2>
+            <h2>シャドウ</h2>
             <label className="checkbox">
               <input
                 type="checkbox"
                 checked={config.shadow.enabled}
                 onChange={(event) => setBoolean('shadow.enabled', event.target.checked)}
               />
-              Shadowを有効化
+              シャドウを有効化
             </label>
             <div className="grid two">
               <label>
-                X
+                オフセットX
                 <input
                   type="number"
                   value={config.shadow.x}
@@ -537,7 +715,7 @@ function EditorPage(): ReactElement {
                 />
               </label>
               <label>
-                Y
+                オフセットY
                 <input
                   type="number"
                   value={config.shadow.y}
@@ -548,7 +726,7 @@ function EditorPage(): ReactElement {
                 />
               </label>
               <label>
-                Blur
+                ぼかし
                 <input
                   type="number"
                   value={config.shadow.blur}
@@ -559,7 +737,7 @@ function EditorPage(): ReactElement {
                 />
               </label>
               <label>
-                Spread
+                広がり
                 <input
                   type="number"
                   value={config.shadow.spread}
@@ -569,34 +747,33 @@ function EditorPage(): ReactElement {
                   onChange={(event) => setNumber('shadow.spread', Number(event.target.value))}
                 />
               </label>
-              <label>
-                Color
-                <input
-                  type="text"
-                  value={config.shadow.color}
-                  onChange={(event) => setString('shadow.color', event.target.value)}
-                />
-              </label>
+              <ColorWithAlphaField
+                label="影色"
+                color={config.shadow.color}
+                opacity={config.shadow.opacity}
+                onColorChange={(value) => setString('shadow.color', value)}
+                onOpacityChange={(value) => setNumber('shadow.opacity', value)}
+              />
             </div>
           </section>
 
           <section className="panel">
-            <h2>Animation Preset</h2>
+            <h2>アニメーション</h2>
             <div className="grid two">
               <label>
-                Preset
+                プリセット
                 <select
                   value={config.animation.preset}
                   onChange={(event) => setString('animation.preset', event.target.value as AnimationPreset)}
                 >
-                  <option value="none">none</option>
-                  <option value="fade">fade</option>
-                  <option value="pulse">pulse</option>
-                  <option value="slide">slide</option>
+                  <option value="none">なし</option>
+                  <option value="fade">フェード</option>
+                  <option value="pulse">パルス</option>
+                  <option value="slide">スライド</option>
                 </select>
               </label>
               <label>
-                Duration (s)
+                時間 (秒)
                 <input
                   type="number"
                   value={config.animation.duration}
@@ -607,7 +784,7 @@ function EditorPage(): ReactElement {
                 />
               </label>
               <label>
-                Delay (s)
+                遅延 (秒)
                 <input
                   type="number"
                   value={config.animation.delay}
@@ -618,7 +795,7 @@ function EditorPage(): ReactElement {
                 />
               </label>
               <label>
-                Iterations (0 = infinite)
+                繰り返し回数 (0=無限)
                 <input
                   type="number"
                   value={config.animation.iterations}
@@ -629,19 +806,19 @@ function EditorPage(): ReactElement {
                 />
               </label>
               <label>
-                Slide Direction
+                スライド方向
                 <select
                   value={config.animation.slideDirection}
                   onChange={(event) => setString('animation.slideDirection', event.target.value as SlideDirection)}
                 >
-                  <option value="left">left</option>
-                  <option value="right">right</option>
-                  <option value="up">up</option>
-                  <option value="down">down</option>
+                  <option value="left">左</option>
+                  <option value="right">右</option>
+                  <option value="up">上</option>
+                  <option value="down">下</option>
                 </select>
               </label>
               <label>
-                Slide Distance (px)
+                スライド距離 (px)
                 <input
                   type="number"
                   value={config.animation.slideDistance}
@@ -652,7 +829,7 @@ function EditorPage(): ReactElement {
                 />
               </label>
               <label>
-                Pulse Scale
+                パルス拡大率
                 <input
                   type="number"
                   value={config.animation.pulseScale}
@@ -668,13 +845,13 @@ function EditorPage(): ReactElement {
                   checked={config.animation.alternate}
                   onChange={(event) => setBoolean('animation.alternate', event.target.checked)}
                 />
-                Alternate
+                交互再生
               </label>
             </div>
           </section>
 
           <section className="panel">
-            <h2>Scroll</h2>
+            <h2>スクロール</h2>
             <label className="checkbox">
               <input
                 type="checkbox"
@@ -685,19 +862,19 @@ function EditorPage(): ReactElement {
             </label>
             <div className="grid two">
               <label>
-                Direction
+                方向
                 <select
                   value={config.scroll.direction}
                   onChange={(event) => setString('scroll.direction', event.target.value as ScrollDirection)}
                 >
-                  <option value="left">left</option>
-                  <option value="right">right</option>
-                  <option value="up">up</option>
-                  <option value="down">down</option>
+                  <option value="left">左</option>
+                  <option value="right">右</option>
+                  <option value="up">上</option>
+                  <option value="down">下</option>
                 </select>
               </label>
               <label>
-                Speed (1-40)
+                速度 (1-40)
                 <input
                   type="number"
                   value={config.scroll.speed}
@@ -708,7 +885,7 @@ function EditorPage(): ReactElement {
                 />
               </label>
               <label>
-                Gap (px)
+                間隔 (px)
                 <input
                   type="number"
                   value={config.scroll.gap}
@@ -722,7 +899,7 @@ function EditorPage(): ReactElement {
           </section>
 
           <section className="panel">
-            <h2>Blink</h2>
+            <h2>点滅</h2>
             <label className="checkbox">
               <input
                 type="checkbox"
@@ -733,7 +910,7 @@ function EditorPage(): ReactElement {
             </label>
             <div className="grid two">
               <label>
-                Period (s)
+                周期 (秒)
                 <input
                   type="number"
                   value={config.blink.period}
@@ -744,7 +921,7 @@ function EditorPage(): ReactElement {
                 />
               </label>
               <label>
-                Duty Cycle (0.05-1.0)
+                点灯率 (0.05-1.0)
                 <input
                   type="number"
                   value={config.blink.dutyCycle}
@@ -760,10 +937,10 @@ function EditorPage(): ReactElement {
 
         <aside className="editor-preview-column">
           <section className="panel preview-panel">
-            <h2>Live Preview</h2>
+            <h2>ライブプレビュー</h2>
             <div className="preview-toolbar">
               <label>
-                Size
+                解像度
                 <select value={previewSize} onChange={(event) => setPreviewSize(event.target.value as PreviewSize)}>
                   {PREVIEW_SIZE_OPTIONS.map((option) => (
                     <option key={option.id} value={option.id}>
@@ -773,7 +950,7 @@ function EditorPage(): ReactElement {
                 </select>
               </label>
               <label>
-                Background
+                背景
                 <select
                   value={previewBackground}
                   onChange={(event) => setPreviewBackground(event.target.value as PreviewBackground)}
@@ -800,14 +977,14 @@ function EditorPage(): ReactElement {
           </section>
 
           <section className="panel">
-            <h2>Render URL</h2>
+            <h2>レンダーURL</h2>
             <textarea value={renderUrl} readOnly rows={4} />
             <div className="actions">
               <button type="button" onClick={copyUrl}>
-                {copied ? 'Copied' : 'Copy URL'}
+                {copied ? 'コピー済み' : 'URLをコピー'}
               </button>
               <a href={renderUrl} target="_blank" rel="noreferrer">
-                Preview Render
+                別タブで確認
               </a>
             </div>
             <p className="hint">
@@ -815,21 +992,28 @@ function EditorPage(): ReactElement {
             </p>
           </section>
 
-          <section className="panel">
-            <h2>OBS CSS Variable Examples</h2>
+          <details className="panel accordion-panel">
+            <summary>OBS CSS変数の例</summary>
             <pre>
 {`--te-text: "Override from OBS";
 --te-color: #ffcc00;
+--te-color-opacity: 1;
+--te-font-family: "'Yu Gothic', sans-serif";
 --te-font-size: 80;
+--te-stroke-color: #000000;
+--te-stroke-opacity: 1;
+--te-background-color: #002244;
+--te-background-opacity: 0.4;
 --te-shadow-enabled: true;
---te-shadow-color: rgba(0, 0, 0, 0.8);
+--te-shadow-color: #000000;
+--te-shadow-opacity: 0.8;
 --te-animation-preset: pulse;
 --te-scroll-enabled: true;
 --te-scroll-direction: left;
 --te-scroll-speed: 12;
 --te-blink-enabled: true;`}
             </pre>
-          </section>
+          </details>
         </aside>
       </div>
     </main>
@@ -957,15 +1141,16 @@ function TextEffectRenderer({ config, className }: { config: TextEffectConfig; c
 
   const baseTextStyle: CSSProperties = {
     ...customVars,
-    color: config.color,
+    color: hexToRgba(config.color, config.colorOpacity),
+    fontFamily: config.fontFamily,
     fontSize: `${config.fontSize}px`,
     fontWeight: config.fontWeight,
     letterSpacing: `${config.letterSpacing}px`,
-    WebkitTextStroke: `${config.strokeWidth}px ${config.strokeColor}`,
+    WebkitTextStroke: `${config.strokeWidth}px ${hexToRgba(config.strokeColor, config.strokeOpacity)}`,
     textShadow: config.shadow.enabled
-      ? `${config.shadow.x}px ${config.shadow.y}px ${config.shadow.blur}px ${config.shadow.spread}px ${config.shadow.color}`
+      ? `${config.shadow.x}px ${config.shadow.y}px ${config.shadow.blur}px ${config.shadow.spread}px ${hexToRgba(config.shadow.color, config.shadow.opacity)}`
       : 'none',
-    backgroundColor: config.backgroundColor,
+    backgroundColor: hexToRgba(config.backgroundColor, config.backgroundOpacity),
     padding: `${config.paddingY}px ${config.paddingX}px`,
     opacity: effectiveBlinkVisible ? 1 : 0,
     animationName,

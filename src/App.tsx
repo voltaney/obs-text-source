@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, ReactElement } from 'react'
 import './App.css'
 
@@ -838,6 +838,10 @@ function EditorPage(): ReactElement {
 
 function TextEffectRenderer({ config, className }: { config: TextEffectConfig; className?: string }): ReactElement {
   const [blinkVisible, setBlinkVisible] = useState(true)
+  const scrollMeasureRef = useRef<HTMLDivElement | null>(null)
+  const scrollViewportRef = useRef<HTMLDivElement | null>(null)
+  const [scrollMetrics, setScrollMetrics] = useState({ distance: 1, repeatCount: 2 })
+  const isHorizontal = config.scroll.direction === 'left' || config.scroll.direction === 'right'
 
   useEffect(() => {
     if (!config.blink.enabled) {
@@ -863,6 +867,58 @@ function TextEffectRenderer({ config, className }: { config: TextEffectConfig; c
       }
     }
   }, [config.blink.enabled, config.blink.period, config.blink.dutyCycle])
+
+  useLayoutEffect(() => {
+    if (!config.scroll.enabled) {
+      return
+    }
+
+    const measure = () => {
+      const measureNode = scrollMeasureRef.current
+      const viewportNode = scrollViewportRef.current
+      if (!measureNode || !viewportNode) {
+        return
+      }
+
+      const contentRect = measureNode.getBoundingClientRect()
+      const viewportRect = viewportNode.getBoundingClientRect()
+      const contentSize = isHorizontal ? contentRect.width : contentRect.height
+      const viewportSize = isHorizontal ? viewportRect.width : viewportRect.height
+      const distance = Math.max(1, Math.ceil(contentSize + config.scroll.gap))
+      const repeatCount = Math.max(2, Math.ceil(viewportSize / distance) + 2)
+
+      setScrollMetrics((prev) => {
+        if (prev.distance === distance && prev.repeatCount === repeatCount) {
+          return prev
+        }
+        return { distance, repeatCount }
+      })
+    }
+
+    measure()
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : undefined
+    if (observer && scrollMeasureRef.current && scrollViewportRef.current) {
+      observer.observe(scrollMeasureRef.current)
+      observer.observe(scrollViewportRef.current)
+    }
+    window.addEventListener('resize', measure)
+
+    return () => {
+      window.removeEventListener('resize', measure)
+      observer?.disconnect()
+    }
+  }, [
+    config.scroll.enabled,
+    config.scroll.gap,
+    config.text,
+    config.fontSize,
+    config.fontWeight,
+    config.letterSpacing,
+    config.strokeWidth,
+    config.paddingX,
+    config.paddingY,
+    isHorizontal,
+  ])
 
   const effectiveBlinkVisible = config.blink.enabled ? blinkVisible : true
 
@@ -923,7 +979,8 @@ function TextEffectRenderer({ config, className }: { config: TextEffectConfig; c
         : animationName
           ? String(config.animation.iterations)
           : undefined,
-    whiteSpace: 'pre-wrap',
+    whiteSpace: 'pre',
+    display: 'inline-block',
   }
 
   const alignClass = `align-h-${config.horizontalAlign} align-v-${config.verticalAlign}`
@@ -939,25 +996,28 @@ function TextEffectRenderer({ config, className }: { config: TextEffectConfig; c
     )
   }
 
-  const isHorizontal = config.scroll.direction === 'left' || config.scroll.direction === 'right'
   const duration = clamp(48 / config.scroll.speed, 1.2, 60)
+  const scrollTrackStyle: CSSProperties & Record<'--te-scroll-distance', string> = {
+    animationDuration: `${duration}s`,
+    gap: `${config.scroll.gap}px`,
+    '--te-scroll-distance': `${scrollMetrics.distance}px`,
+  }
 
   return (
     <div className={containerClassName}>
-      <div className="scroll-viewport" data-axis={isHorizontal ? 'x' : 'y'}>
-        <div
-          className={`scroll-track dir-${config.scroll.direction}`}
-          style={{
-            animationDuration: `${duration}s`,
-            gap: `${config.scroll.gap}px`,
-          }}
-        >
-          <div className="effect-text" style={baseTextStyle}>
-            {config.text}
-          </div>
-          <div className="effect-text" style={baseTextStyle} aria-hidden="true">
-            {config.text}
-          </div>
+      <div className="scroll-viewport" data-axis={isHorizontal ? 'x' : 'y'} ref={scrollViewportRef}>
+        <div className={`scroll-track dir-${config.scroll.direction}`} style={scrollTrackStyle}>
+          {Array.from({ length: scrollMetrics.repeatCount }, (_, index) => (
+            <div
+              key={`scroll-item-${index}`}
+              className="effect-text"
+              style={baseTextStyle}
+              ref={index === 0 ? scrollMeasureRef : undefined}
+              aria-hidden={index === 0 ? undefined : true}
+            >
+              {config.text}
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -997,3 +1057,4 @@ function App() {
 }
 
 export default App
+

@@ -253,6 +253,7 @@ pre {
 .effect-text {
   line-height: 1.1;
   will-change: transform, opacity;
+  flex-shrink: 0;
 }
 
 .scroll-viewport {
@@ -276,8 +277,10 @@ pre {
   display: inline-flex;
   align-items: center;
   white-space: nowrap;
+  width: max-content;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
+  will-change: transform;
 }
 
 .scroll-track.dir-left {
@@ -337,41 +340,41 @@ pre {
 
 @keyframes te-scroll-left {
   from {
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0);
   }
 
   to {
-    transform: translateX(-50%);
+    transform: translate3d(calc(-1 * var(--te-scroll-distance, 0px)), 0, 0);
   }
 }
 
 @keyframes te-scroll-right {
   from {
-    transform: translateX(-50%);
+    transform: translate3d(calc(-1 * var(--te-scroll-distance, 0px)), 0, 0);
   }
 
   to {
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0);
   }
 }
 
 @keyframes te-scroll-up {
   from {
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
   }
 
   to {
-    transform: translateY(-50%);
+    transform: translate3d(0, calc(-1 * var(--te-scroll-distance, 0px)), 0);
   }
 }
 
 @keyframes te-scroll-down {
   from {
-    transform: translateY(-50%);
+    transform: translate3d(0, calc(-1 * var(--te-scroll-distance, 0px)), 0);
   }
 
   to {
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
   }
 }
 

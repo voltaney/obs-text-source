@@ -285,6 +285,26 @@ const PREVIEW_BACKGROUND_OPTIONS: ReadonlyArray<{
   { id: "transparent", label: "透過" },
 ];
 
+const OBS_CSS_VARIABLES_EXAMPLE = `:root {
+  --te-text: "Override from OBS";
+  --te-color: #ffcc00;
+  --te-color-opacity: 1;
+  --te-font-family: "'Yu Gothic', sans-serif";
+  --te-font-size: 80;
+  --te-stroke-color: #000000;
+  --te-stroke-opacity: 1;
+  --te-background-color: #002244;
+  --te-background-opacity: 0.4;
+  --te-shadow-enabled: true;
+  --te-shadow-color: #000000;
+  --te-shadow-opacity: 0.8;
+  --te-animation-preset: pulse;
+  --te-scroll-enabled: true;
+  --te-scroll-direction: left;
+  --te-scroll-speed: 12;
+  --te-blink-enabled: true;
+}`;
+
 function clamp(value: number, min: number, max: number): number {
   if (Number.isNaN(value)) {
     return min;
@@ -805,6 +825,7 @@ function EditorPage(): ReactElement {
   const [previewBackground, setPreviewBackground] =
     useState<PreviewBackground>("checker");
   const [importSourceUrl, setImportSourceUrl] = useState("");
+  const [isCssExampleModalOpen, setIsCssExampleModalOpen] = useState(false);
   const [importStatus, setImportStatus] = useState<{
     type: "ok" | "error";
     message: string;
@@ -876,6 +897,23 @@ function EditorPage(): ReactElement {
     setConfig(imported);
     setImportStatus({ type: "ok", message: "設定を読み込みました。" });
   };
+
+  useEffect(() => {
+    if (!isCssExampleModalOpen) {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsCssExampleModalOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isCssExampleModalOpen]);
 
   return (
     <main className="editor-page">
@@ -1436,6 +1474,12 @@ function EditorPage(): ReactElement {
               <a href={renderUrl} target="_blank" rel="noreferrer">
                 別タブで確認
               </a>
+              <button
+                type="button"
+                onClick={() => setIsCssExampleModalOpen(true)}
+              >
+                CSS変数例
+              </button>
             </div>
             <p className="hint">
               OBS側のカスタムCSS変数で `--te-text`
@@ -1463,33 +1507,36 @@ function EditorPage(): ReactElement {
               </p>
             )}
           </section>
-
-          <details className="panel accordion-panel">
-            <summary>OBS CSS変数の例</summary>
-            <pre>
-              {`:root {
-  --te-text: "Override from OBS";
-  --te-color: #ffcc00;
-  --te-color-opacity: 1;
-  --te-font-family: "'Yu Gothic', sans-serif";
-  --te-font-size: 80;
-  --te-stroke-color: #000000;
-  --te-stroke-opacity: 1;
-  --te-background-color: #002244;
-  --te-background-opacity: 0.4;
-  --te-shadow-enabled: true;
-  --te-shadow-color: #000000;
-  --te-shadow-opacity: 0.8;
-  --te-animation-preset: pulse;
-  --te-scroll-enabled: true;
-  --te-scroll-direction: left;
-  --te-scroll-speed: 12;
-  --te-blink-enabled: true;
-}`}
-            </pre>
-          </details>
         </aside>
       </div>
+
+      {isCssExampleModalOpen && (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onClick={() => setIsCssExampleModalOpen(false)}
+        >
+          <div
+            className="modal-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="css-vars-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="modal-header">
+              <h3 id="css-vars-modal-title">OBS CSS変数の例</h3>
+              <button
+                type="button"
+                className="modal-close"
+                onClick={() => setIsCssExampleModalOpen(false)}
+              >
+                閉じる
+              </button>
+            </div>
+            <pre>{OBS_CSS_VARIABLES_EXAMPLE}</pre>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

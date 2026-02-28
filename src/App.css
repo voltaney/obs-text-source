@@ -275,15 +275,46 @@ pre {
   overflow-x: auto;
 }
 
-.accordion-panel summary {
-  cursor: pointer;
-  font-size: 17px;
-  font-weight: 600;
-  color: #10322b;
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: #0b1b17b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  z-index: 20;
 }
 
-.accordion-panel[open] summary {
+.modal-card {
+  width: min(760px, 100%);
+  max-height: calc(100vh - 36px);
+  background: #f6fbf9;
+  border: 1px solid #8faea4;
+  border-radius: 14px;
+  box-shadow: 0 16px 36px #0f2a2359;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   margin-bottom: 10px;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #12372f;
+}
+
+.modal-close {
+  background: #3f8f7d;
+  border-color: #2f6d5f;
+  white-space: nowrap;
 }
 
 .render-root {
@@ -485,5 +516,14 @@ pre {
 
   .actions {
     flex-wrap: wrap;
+  }
+
+  .modal-backdrop {
+    padding: 12px;
+  }
+
+  .modal-card {
+    max-height: calc(100vh - 24px);
+    padding: 12px;
   }
 }

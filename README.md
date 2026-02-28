@@ -1,7 +1,9 @@
 # texteffect-editor
 
-OBS の Browser Source で表示するテキスト演出用の URL を作成するエディタです。  
-エディタ画面で見た目を調整し、生成された `mode=render` URL を OBS に設定して使用します。
+OBSのBrowser Sourceで表示するテキスト演出用のURLを作成するエディタです。  
+エディタ画面で見た目を調整し、生成された`mode=render`URLをOBSに設定して使用します。
+
+生成サイトは[こちら](https://voltaney.github.io/obs-text-source/)。
 
 ## 主な機能
 

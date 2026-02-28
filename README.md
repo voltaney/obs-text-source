@@ -54,17 +54,19 @@ OBS 側のカスタム CSS で CSS 変数を指定すると、URL の設定よ�
 例:
 
 ```css
---te-text: "Override from OBS";
---te-color: #ffcc00;
---te-color-opacity: 1;
---te-font-family: "'Yu Gothic', sans-serif";
---te-font-size: 80;
---te-shadow-enabled: true;
---te-animation-preset: pulse;
---te-scroll-enabled: true;
---te-scroll-direction: left;
---te-scroll-speed: 12;
---te-blink-enabled: true;
+:root {
+  --te-text: "Override from OBS";
+  --te-color: #ffcc00;
+  --te-color-opacity: 1;
+  --te-font-family: "'Yu Gothic', sans-serif";
+  --te-font-size: 80;
+  --te-shadow-enabled: true;
+  --te-animation-preset: pulse;
+  --te-scroll-enabled: true;
+  --te-scroll-direction: left;
+  --te-scroll-speed: 12;
+  --te-blink-enabled: true;
+}
 ```
 
 ## 開発コマンド

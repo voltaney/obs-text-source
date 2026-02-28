@@ -1,103 +1,103 @@
-﻿import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import type { CSSProperties, ReactElement } from 'react'
-import './App.css'
+﻿import type { CSSProperties, ReactElement } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import "./App.css";
 
-type AnimationPreset = 'none' | 'fade' | 'pulse' | 'slide'
-type SlideDirection = 'left' | 'right' | 'up' | 'down'
-type ScrollDirection = 'left' | 'right' | 'up' | 'down'
-type HorizontalAlign = 'left' | 'center' | 'right'
-type VerticalAlign = 'top' | 'center' | 'bottom'
-type PreviewSize = '1920x1080' | '1280x720' | '1080x1920'
-type PreviewBackground = 'checker' | 'dark' | 'light' | 'transparent'
+type AnimationPreset = "none" | "fade" | "pulse" | "slide";
+type SlideDirection = "left" | "right" | "up" | "down";
+type ScrollDirection = "left" | "right" | "up" | "down";
+type HorizontalAlign = "left" | "center" | "right";
+type VerticalAlign = "top" | "center" | "bottom";
+type PreviewSize = "1920x1080" | "1280x720" | "1080x1920";
+type PreviewBackground = "checker" | "dark" | "light" | "transparent";
 
 interface TextEffectConfig {
-  text: string
-  fontFamily: string
-  color: string
-  colorOpacity: number
-  fontSize: number
-  fontWeight: number
-  letterSpacing: number
-  strokeWidth: number
-  strokeColor: string
-  strokeOpacity: number
-  backgroundColor: string
-  backgroundOpacity: number
-  paddingX: number
-  paddingY: number
-  horizontalAlign: HorizontalAlign
-  verticalAlign: VerticalAlign
+  text: string;
+  fontFamily: string;
+  color: string;
+  colorOpacity: number;
+  fontSize: number;
+  fontWeight: number;
+  letterSpacing: number;
+  strokeWidth: number;
+  strokeColor: string;
+  strokeOpacity: number;
+  backgroundColor: string;
+  backgroundOpacity: number;
+  paddingX: number;
+  paddingY: number;
+  horizontalAlign: HorizontalAlign;
+  verticalAlign: VerticalAlign;
   shadow: {
-    enabled: boolean
-    x: number
-    y: number
-    blur: number
-    spread: number
-    color: string
-    opacity: number
-  }
+    enabled: boolean;
+    x: number;
+    y: number;
+    blur: number;
+    spread: number;
+    color: string;
+    opacity: number;
+  };
   animation: {
-    preset: AnimationPreset
-    duration: number
-    delay: number
-    iterations: number
-    alternate: boolean
-    slideDirection: SlideDirection
-    slideDistance: number
-    pulseScale: number
-  }
+    preset: AnimationPreset;
+    duration: number;
+    delay: number;
+    iterations: number;
+    alternate: boolean;
+    slideDirection: SlideDirection;
+    slideDistance: number;
+    pulseScale: number;
+  };
   scroll: {
-    enabled: boolean
-    direction: ScrollDirection
-    speed: number
-    gap: number
-  }
+    enabled: boolean;
+    direction: ScrollDirection;
+    speed: number;
+    gap: number;
+  };
   blink: {
-    enabled: boolean
-    period: number
-    dutyCycle: number
-  }
+    enabled: boolean;
+    period: number;
+    dutyCycle: number;
+  };
 }
 
 const DEFAULT_CONFIG: TextEffectConfig = {
-  text: 'Sample Text',
+  text: "Sample Text",
   fontFamily: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif",
-  color: '#ffffff',
+  color: "#ffffff",
   colorOpacity: 1,
   fontSize: 72,
   fontWeight: 700,
   letterSpacing: 1,
   strokeWidth: 0,
-  strokeColor: '#000000',
+  strokeColor: "#000000",
   strokeOpacity: 1,
-  backgroundColor: '#000000',
+  backgroundColor: "#000000",
   backgroundOpacity: 0,
   paddingX: 0,
   paddingY: 0,
-  horizontalAlign: 'center',
-  verticalAlign: 'center',
+  horizontalAlign: "center",
+  verticalAlign: "center",
   shadow: {
     enabled: true,
     x: 2,
     y: 2,
     blur: 8,
     spread: 0,
-    color: '#000000',
+    color: "#000000",
     opacity: 0.7,
   },
   animation: {
-    preset: 'none',
+    preset: "none",
     duration: 1.2,
     delay: 0,
     iterations: 1,
     alternate: false,
-    slideDirection: 'left',
+    slideDirection: "left",
     slideDistance: 120,
     pulseScale: 1.12,
   },
   scroll: {
     enabled: false,
-    direction: 'left',
+    direction: "left",
     speed: 8,
     gap: 96,
   },
@@ -106,449 +106,600 @@ const DEFAULT_CONFIG: TextEffectConfig = {
     period: 1,
     dutyCycle: 0.5,
   },
-}
+};
 
-const BOOLEAN_TRUE_SET = new Set(['1', 'true', 'yes', 'on'])
-const HEX_COLOR_PATTERN = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i
+const BOOLEAN_TRUE_SET = new Set(["1", "true", "yes", "on"]);
+const HEX_COLOR_PATTERN = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
 
 const FONT_FAMILY_OPTIONS: ReadonlyArray<{
-  label: string
-  value: string
-  language: 'ja' | 'en'
+  label: string;
+  value: string;
+  language: "ja" | "en";
 }> = [
   {
-    label: '日本語サンプル - Noto Sans JP',
+    label: "日本語サンプル - Noto Sans JP",
     value: "'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif",
-    language: 'ja',
+    language: "ja",
   },
   {
-    label: '日本語サンプル - Yu Gothic',
+    label: "日本語サンプル - Yu Gothic",
     value: "'Yu Gothic', 'Hiragino Kaku Gothic ProN', sans-serif",
-    language: 'ja',
+    language: "ja",
   },
   {
-    label: '日本語サンプル - Meiryo',
+    label: "日本語サンプル - Meiryo",
     value: "'Meiryo', 'Hiragino Kaku Gothic ProN', sans-serif",
-    language: 'ja',
+    language: "ja",
   },
   {
-    label: '日本語サンプル - Noto Serif JP',
+    label: "日本語サンプル - Noto Serif JP",
     value: "'Noto Serif JP', 'Hiragino Mincho ProN', serif",
-    language: 'ja',
+    language: "ja",
   },
   {
-    label: '日本語サンプル - BIZ UDPGothic',
+    label: "日本語サンプル - BIZ UDPGothic",
     value: "'BIZ UDPGothic', 'Yu Gothic UI', sans-serif",
-    language: 'ja',
+    language: "ja",
   },
   {
-    label: '日本語サンプル - BIZ UDPMincho',
+    label: "日本語サンプル - BIZ UDPMincho",
     value: "'BIZ UDPMincho', 'Yu Mincho', serif",
-    language: 'ja',
+    language: "ja",
   },
   {
-    label: '日本語サンプル - M PLUS 1p',
+    label: "日本語サンプル - M PLUS 1p",
     value: "'M PLUS 1p', 'Hiragino Kaku Gothic ProN', sans-serif",
-    language: 'ja',
+    language: "ja",
   },
   {
-    label: '日本語サンプル - 游明朝',
+    label: "日本語サンプル - 游明朝",
     value: "'Yu Mincho', 'Hiragino Mincho ProN', serif",
-    language: 'ja',
+    language: "ja",
   },
   {
-    label: '日本語サンプル - UD デジタル 教科書体',
+    label: "日本語サンプル - UD デジタル 教科書体",
     value: "'UD Digi Kyokasho NK-R', 'Yu Gothic UI', sans-serif",
-    language: 'ja',
+    language: "ja",
   },
   {
-    label: '日本語サンプル - MS ゴシック',
+    label: "日本語サンプル - MS ゴシック",
     value: "'MS Gothic', 'Meiryo', sans-serif",
-    language: 'ja',
+    language: "ja",
   },
   {
-    label: '日本語サンプル - MS 明朝',
+    label: "日本語サンプル - MS 明朝",
     value: "'MS Mincho', 'Yu Mincho', serif",
-    language: 'ja',
+    language: "ja",
   },
   {
-    label: 'English Sample - Inter',
+    label: "English Sample - Inter",
     value: "'Inter', 'Segoe UI', sans-serif",
-    language: 'en',
+    language: "en",
   },
   {
-    label: 'English Sample - Montserrat',
+    label: "English Sample - Montserrat",
     value: "'Montserrat', 'Segoe UI', sans-serif",
-    language: 'en',
+    language: "en",
   },
   {
-    label: 'English Sample - Oswald',
+    label: "English Sample - Oswald",
     value: "'Oswald', 'Arial Narrow', sans-serif",
-    language: 'en',
+    language: "en",
   },
   {
-    label: 'English Sample - Georgia',
+    label: "English Sample - Georgia",
     value: "'Georgia', 'Times New Roman', serif",
-    language: 'en',
+    language: "en",
   },
   {
-    label: 'English Sample - Cascadia Mono',
+    label: "English Sample - Cascadia Mono",
     value: "'Cascadia Mono', 'Consolas', monospace",
-    language: 'en',
+    language: "en",
   },
   {
-    label: 'English Sample - Segoe UI',
+    label: "English Sample - Segoe UI",
     value: "'Segoe UI', 'Arial', sans-serif",
-    language: 'en',
+    language: "en",
   },
   {
-    label: 'English Sample - Arial',
+    label: "English Sample - Arial",
     value: "'Arial', 'Helvetica Neue', sans-serif",
-    language: 'en',
+    language: "en",
   },
   {
-    label: 'English Sample - Verdana',
+    label: "English Sample - Verdana",
     value: "'Verdana', 'Geneva', sans-serif",
-    language: 'en',
+    language: "en",
   },
   {
-    label: 'English Sample - Tahoma',
+    label: "English Sample - Tahoma",
     value: "'Tahoma', 'Verdana', sans-serif",
-    language: 'en',
+    language: "en",
   },
   {
-    label: 'English Sample - Trebuchet MS',
+    label: "English Sample - Trebuchet MS",
     value: "'Trebuchet MS', 'Verdana', sans-serif",
-    language: 'en',
+    language: "en",
   },
   {
-    label: 'English Sample - Times New Roman',
+    label: "English Sample - Times New Roman",
     value: "'Times New Roman', 'Georgia', serif",
-    language: 'en',
+    language: "en",
   },
   {
-    label: 'English Sample - Cambria',
+    label: "English Sample - Cambria",
     value: "'Cambria', 'Times New Roman', serif",
-    language: 'en',
+    language: "en",
   },
   {
-    label: 'English Sample - Palatino Linotype',
+    label: "English Sample - Palatino Linotype",
     value: "'Palatino Linotype', 'Book Antiqua', serif",
-    language: 'en',
+    language: "en",
   },
   {
-    label: 'English Sample - Courier New',
+    label: "English Sample - Courier New",
     value: "'Courier New', 'Consolas', monospace",
-    language: 'en',
+    language: "en",
   },
   {
-    label: 'English Sample - Consolas',
+    label: "English Sample - Consolas",
     value: "'Consolas', 'Cascadia Mono', monospace",
-    language: 'en',
+    language: "en",
   },
-]
+];
 
 const FONT_WEIGHT_OPTIONS: ReadonlyArray<{ value: number; label: string }> = [
-  { value: 100, label: '100 Thin' },
-  { value: 200, label: '200 Extra Light' },
-  { value: 300, label: '300 Light' },
-  { value: 400, label: '400 Regular' },
-  { value: 500, label: '500 Medium' },
-  { value: 600, label: '600 Semi Bold' },
-  { value: 700, label: '700 Bold' },
-  { value: 800, label: '800 Extra Bold' },
-  { value: 900, label: '900 Black' },
-]
+  { value: 100, label: "100 Thin" },
+  { value: 200, label: "200 Extra Light" },
+  { value: 300, label: "300 Light" },
+  { value: 400, label: "400 Regular" },
+  { value: 500, label: "500 Medium" },
+  { value: 600, label: "600 Semi Bold" },
+  { value: 700, label: "700 Bold" },
+  { value: 800, label: "800 Extra Bold" },
+  { value: 900, label: "900 Black" },
+];
 
-const FONT_FAMILY_VALUES = FONT_FAMILY_OPTIONS.map((option) => option.value) as readonly string[]
+const FONT_FAMILY_VALUES = FONT_FAMILY_OPTIONS.map(
+  (option) => option.value,
+) as readonly string[];
 
 const PREVIEW_SIZE_OPTIONS: ReadonlyArray<{
-  id: PreviewSize
-  label: string
-  width: number
-  height: number
+  id: PreviewSize;
+  label: string;
+  width: number;
+  height: number;
 }> = [
-  { id: '1920x1080', label: '1920 x 1080', width: 1920, height: 1080 },
-  { id: '1280x720', label: '1280 x 720', width: 1280, height: 720 },
-  { id: '1080x1920', label: '1080 x 1920', width: 1080, height: 1920 },
-]
+  { id: "1920x1080", label: "1920 x 1080", width: 1920, height: 1080 },
+  { id: "1280x720", label: "1280 x 720", width: 1280, height: 720 },
+  { id: "1080x1920", label: "1080 x 1920", width: 1080, height: 1920 },
+];
 
 const PREVIEW_BACKGROUND_OPTIONS: ReadonlyArray<{
-  id: PreviewBackground
-  label: string
+  id: PreviewBackground;
+  label: string;
 }> = [
-  { id: 'checker', label: 'チェック' },
-  { id: 'dark', label: '暗色' },
-  { id: 'light', label: '明色' },
-  { id: 'transparent', label: '透過' },
-]
+  { id: "checker", label: "チェック" },
+  { id: "dark", label: "暗色" },
+  { id: "light", label: "明色" },
+  { id: "transparent", label: "透過" },
+];
 
 function clamp(value: number, min: number, max: number): number {
   if (Number.isNaN(value)) {
-    return min
+    return min;
   }
-  return Math.min(max, Math.max(min, value))
+  return Math.min(max, Math.max(min, value));
 }
 
 function parseBoolean(value: unknown, fallback: boolean): boolean {
-  if (typeof value === 'boolean') {
-    return value
+  if (typeof value === "boolean") {
+    return value;
   }
-  if (typeof value === 'string') {
-    return BOOLEAN_TRUE_SET.has(value.trim().toLowerCase())
+  if (typeof value === "string") {
+    return BOOLEAN_TRUE_SET.has(value.trim().toLowerCase());
   }
-  return fallback
+  return fallback;
 }
 
-function parseNumber(value: unknown, fallback: number, min: number, max: number): number {
-  if (typeof value === 'number') {
-    return clamp(value, min, max)
+function parseNumber(
+  value: unknown,
+  fallback: number,
+  min: number,
+  max: number,
+): number {
+  if (typeof value === "number") {
+    return clamp(value, min, max);
   }
-  if (typeof value === 'string') {
-    const parsed = Number(value)
-    return Number.isFinite(parsed) ? clamp(parsed, min, max) : fallback
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? clamp(parsed, min, max) : fallback;
   }
-  return fallback
+  return fallback;
 }
 
 function parseString(value: unknown, fallback: string): string {
-  return typeof value === 'string' && value.length > 0 ? value : fallback
+  return typeof value === "string" && value.length > 0 ? value : fallback;
 }
 
 function normalizeHexColor(value: string): string | undefined {
   if (!HEX_COLOR_PATTERN.test(value)) {
-    return undefined
+    return undefined;
   }
   if (value.length === 4) {
-    return `#${value[1]}${value[1]}${value[2]}${value[2]}${value[3]}${value[3]}`.toLowerCase()
+    return `#${value[1]}${value[1]}${value[2]}${value[2]}${value[3]}${value[3]}`.toLowerCase();
   }
-  return value.toLowerCase()
+  return value.toLowerCase();
 }
 
 function parseColor(value: unknown, fallback: string): string {
-  if (typeof value !== 'string') {
-    return fallback
+  if (typeof value !== "string") {
+    return fallback;
   }
-  return normalizeHexColor(value) ?? fallback
+  return normalizeHexColor(value) ?? fallback;
 }
 
 function hexToRgba(color: string, alpha: number): string {
-  const normalized = normalizeHexColor(color) ?? '#000000'
-  const r = Number.parseInt(normalized.slice(1, 3), 16)
-  const g = Number.parseInt(normalized.slice(3, 5), 16)
-  const b = Number.parseInt(normalized.slice(5, 7), 16)
-  return `rgba(${r}, ${g}, ${b}, ${clamp(alpha, 0, 1)})`
+  const normalized = normalizeHexColor(color) ?? "#000000";
+  const r = Number.parseInt(normalized.slice(1, 3), 16);
+  const g = Number.parseInt(normalized.slice(3, 5), 16);
+  const b = Number.parseInt(normalized.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${clamp(alpha, 0, 1)})`;
 }
 
 function buildTextShadow(config: TextEffectConfig): string {
   if (!config.shadow.enabled) {
-    return 'none'
+    return "none";
   }
 
-  const color = hexToRgba(config.shadow.color, config.shadow.opacity)
-  const effectiveBlur = clamp(config.shadow.blur + config.shadow.spread, 0, 400)
-  return `${config.shadow.x}px ${config.shadow.y}px ${effectiveBlur}px ${color}`
+  const color = hexToRgba(config.shadow.color, config.shadow.opacity);
+  const effectiveBlur = clamp(
+    config.shadow.blur + config.shadow.spread,
+    0,
+    400,
+  );
+  return `${config.shadow.x}px ${config.shadow.y}px ${effectiveBlur}px ${color}`;
 }
 
-function parseChoice<T extends string>(value: unknown, choices: readonly T[], fallback: T): T {
-  return typeof value === 'string' && choices.includes(value as T) ? (value as T) : fallback
+function parseChoice<T extends string>(
+  value: unknown,
+  choices: readonly T[],
+  fallback: T,
+): T {
+  return typeof value === "string" && choices.includes(value as T)
+    ? (value as T)
+    : fallback;
 }
 
 function sanitizeConfig(raw: unknown): TextEffectConfig {
-  const source = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
-  const shadowSource = source.shadow && typeof source.shadow === 'object' ? (source.shadow as Record<string, unknown>) : {}
+  const source =
+    raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  const shadowSource =
+    source.shadow && typeof source.shadow === "object"
+      ? (source.shadow as Record<string, unknown>)
+      : {};
   const animationSource =
-    source.animation && typeof source.animation === 'object' ? (source.animation as Record<string, unknown>) : {}
-  const scrollSource = source.scroll && typeof source.scroll === 'object' ? (source.scroll as Record<string, unknown>) : {}
-  const blinkSource = source.blink && typeof source.blink === 'object' ? (source.blink as Record<string, unknown>) : {}
+    source.animation && typeof source.animation === "object"
+      ? (source.animation as Record<string, unknown>)
+      : {};
+  const scrollSource =
+    source.scroll && typeof source.scroll === "object"
+      ? (source.scroll as Record<string, unknown>)
+      : {};
+  const blinkSource =
+    source.blink && typeof source.blink === "object"
+      ? (source.blink as Record<string, unknown>)
+      : {};
 
   return {
     text: parseString(source.text, DEFAULT_CONFIG.text),
-    fontFamily: parseChoice(source.fontFamily, FONT_FAMILY_VALUES, DEFAULT_CONFIG.fontFamily),
+    fontFamily: parseChoice(
+      source.fontFamily,
+      FONT_FAMILY_VALUES,
+      DEFAULT_CONFIG.fontFamily,
+    ),
     color: parseColor(source.color, DEFAULT_CONFIG.color),
-    colorOpacity: parseNumber(source.colorOpacity, DEFAULT_CONFIG.colorOpacity, 0, 1),
+    colorOpacity: parseNumber(
+      source.colorOpacity,
+      DEFAULT_CONFIG.colorOpacity,
+      0,
+      1,
+    ),
     fontSize: parseNumber(source.fontSize, DEFAULT_CONFIG.fontSize, 8, 320),
-    fontWeight: parseNumber(source.fontWeight, DEFAULT_CONFIG.fontWeight, 100, 900),
-    letterSpacing: parseNumber(source.letterSpacing, DEFAULT_CONFIG.letterSpacing, -12, 30),
-    strokeWidth: parseNumber(source.strokeWidth, DEFAULT_CONFIG.strokeWidth, 0, 30),
+    fontWeight: parseNumber(
+      source.fontWeight,
+      DEFAULT_CONFIG.fontWeight,
+      100,
+      900,
+    ),
+    letterSpacing: parseNumber(
+      source.letterSpacing,
+      DEFAULT_CONFIG.letterSpacing,
+      -12,
+      30,
+    ),
+    strokeWidth: parseNumber(
+      source.strokeWidth,
+      DEFAULT_CONFIG.strokeWidth,
+      0,
+      30,
+    ),
     strokeColor: parseColor(source.strokeColor, DEFAULT_CONFIG.strokeColor),
-    strokeOpacity: parseNumber(source.strokeOpacity, DEFAULT_CONFIG.strokeOpacity, 0, 1),
-    backgroundColor: parseColor(source.backgroundColor, DEFAULT_CONFIG.backgroundColor),
-    backgroundOpacity: parseNumber(source.backgroundOpacity, DEFAULT_CONFIG.backgroundOpacity, 0, 1),
+    strokeOpacity: parseNumber(
+      source.strokeOpacity,
+      DEFAULT_CONFIG.strokeOpacity,
+      0,
+      1,
+    ),
+    backgroundColor: parseColor(
+      source.backgroundColor,
+      DEFAULT_CONFIG.backgroundColor,
+    ),
+    backgroundOpacity: parseNumber(
+      source.backgroundOpacity,
+      DEFAULT_CONFIG.backgroundOpacity,
+      0,
+      1,
+    ),
     paddingX: parseNumber(source.paddingX, DEFAULT_CONFIG.paddingX, 0, 400),
     paddingY: parseNumber(source.paddingY, DEFAULT_CONFIG.paddingY, 0, 400),
-    horizontalAlign: parseChoice(source.horizontalAlign, ['left', 'center', 'right'] as const, DEFAULT_CONFIG.horizontalAlign),
-    verticalAlign: parseChoice(source.verticalAlign, ['top', 'center', 'bottom'] as const, DEFAULT_CONFIG.verticalAlign),
+    horizontalAlign: parseChoice(
+      source.horizontalAlign,
+      ["left", "center", "right"] as const,
+      DEFAULT_CONFIG.horizontalAlign,
+    ),
+    verticalAlign: parseChoice(
+      source.verticalAlign,
+      ["top", "center", "bottom"] as const,
+      DEFAULT_CONFIG.verticalAlign,
+    ),
     shadow: {
-      enabled: parseBoolean(shadowSource.enabled, DEFAULT_CONFIG.shadow.enabled),
+      enabled: parseBoolean(
+        shadowSource.enabled,
+        DEFAULT_CONFIG.shadow.enabled,
+      ),
       x: parseNumber(shadowSource.x, DEFAULT_CONFIG.shadow.x, -400, 400),
       y: parseNumber(shadowSource.y, DEFAULT_CONFIG.shadow.y, -400, 400),
       blur: parseNumber(shadowSource.blur, DEFAULT_CONFIG.shadow.blur, 0, 400),
-      spread: parseNumber(shadowSource.spread, DEFAULT_CONFIG.shadow.spread, -200, 200),
+      spread: parseNumber(
+        shadowSource.spread,
+        DEFAULT_CONFIG.shadow.spread,
+        -200,
+        200,
+      ),
       color: parseColor(shadowSource.color, DEFAULT_CONFIG.shadow.color),
-      opacity: parseNumber(shadowSource.opacity, DEFAULT_CONFIG.shadow.opacity, 0, 1),
+      opacity: parseNumber(
+        shadowSource.opacity,
+        DEFAULT_CONFIG.shadow.opacity,
+        0,
+        1,
+      ),
     },
     animation: {
-      preset: parseChoice(animationSource.preset, ['none', 'fade', 'pulse', 'slide'] as const, DEFAULT_CONFIG.animation.preset),
-      duration: parseNumber(animationSource.duration, DEFAULT_CONFIG.animation.duration, 0.1, 120),
-      delay: parseNumber(animationSource.delay, DEFAULT_CONFIG.animation.delay, 0, 60),
-      iterations: parseNumber(animationSource.iterations, DEFAULT_CONFIG.animation.iterations, 0, 1000),
-      alternate: parseBoolean(animationSource.alternate, DEFAULT_CONFIG.animation.alternate),
+      preset: parseChoice(
+        animationSource.preset,
+        ["none", "fade", "pulse", "slide"] as const,
+        DEFAULT_CONFIG.animation.preset,
+      ),
+      duration: parseNumber(
+        animationSource.duration,
+        DEFAULT_CONFIG.animation.duration,
+        0.1,
+        120,
+      ),
+      delay: parseNumber(
+        animationSource.delay,
+        DEFAULT_CONFIG.animation.delay,
+        0,
+        60,
+      ),
+      iterations: parseNumber(
+        animationSource.iterations,
+        DEFAULT_CONFIG.animation.iterations,
+        0,
+        1000,
+      ),
+      alternate: parseBoolean(
+        animationSource.alternate,
+        DEFAULT_CONFIG.animation.alternate,
+      ),
       slideDirection: parseChoice(
         animationSource.slideDirection,
-        ['left', 'right', 'up', 'down'] as const,
+        ["left", "right", "up", "down"] as const,
         DEFAULT_CONFIG.animation.slideDirection,
       ),
-      slideDistance: parseNumber(animationSource.slideDistance, DEFAULT_CONFIG.animation.slideDistance, 0, 2000),
-      pulseScale: parseNumber(animationSource.pulseScale, DEFAULT_CONFIG.animation.pulseScale, 1, 3),
+      slideDistance: parseNumber(
+        animationSource.slideDistance,
+        DEFAULT_CONFIG.animation.slideDistance,
+        0,
+        2000,
+      ),
+      pulseScale: parseNumber(
+        animationSource.pulseScale,
+        DEFAULT_CONFIG.animation.pulseScale,
+        1,
+        3,
+      ),
     },
     scroll: {
-      enabled: parseBoolean(scrollSource.enabled, DEFAULT_CONFIG.scroll.enabled),
-      direction: parseChoice(scrollSource.direction, ['left', 'right', 'up', 'down'] as const, DEFAULT_CONFIG.scroll.direction),
-      speed: parseNumber(scrollSource.speed, DEFAULT_CONFIG.scroll.speed, 1, 40),
+      enabled: parseBoolean(
+        scrollSource.enabled,
+        DEFAULT_CONFIG.scroll.enabled,
+      ),
+      direction: parseChoice(
+        scrollSource.direction,
+        ["left", "right", "up", "down"] as const,
+        DEFAULT_CONFIG.scroll.direction,
+      ),
+      speed: parseNumber(
+        scrollSource.speed,
+        DEFAULT_CONFIG.scroll.speed,
+        1,
+        40,
+      ),
       gap: parseNumber(scrollSource.gap, DEFAULT_CONFIG.scroll.gap, 0, 600),
     },
     blink: {
       enabled: parseBoolean(blinkSource.enabled, DEFAULT_CONFIG.blink.enabled),
-      period: parseNumber(blinkSource.period, DEFAULT_CONFIG.blink.period, 0.1, 30),
-      dutyCycle: parseNumber(blinkSource.dutyCycle, DEFAULT_CONFIG.blink.dutyCycle, 0.05, 1),
+      period: parseNumber(
+        blinkSource.period,
+        DEFAULT_CONFIG.blink.period,
+        0.1,
+        30,
+      ),
+      dutyCycle: parseNumber(
+        blinkSource.dutyCycle,
+        DEFAULT_CONFIG.blink.dutyCycle,
+        0.05,
+        1,
+      ),
     },
-  }
+  };
 }
 
 function encodeConfig(config: TextEffectConfig): string {
-  const json = JSON.stringify(config)
-  const bytes = new TextEncoder().encode(json)
-  let binary = ''
+  const json = JSON.stringify(config);
+  const bytes = new TextEncoder().encode(json);
+  let binary = "";
   for (const byte of bytes) {
-    binary += String.fromCharCode(byte)
+    binary += String.fromCharCode(byte);
   }
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
+  return btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
 }
 
 function tryDecodeConfigValue(cfg: string): TextEffectConfig | undefined {
   try {
-    const normalized = cfg.replace(/-/g, '+').replace(/_/g, '/')
-    const paddingLength = (4 - (normalized.length % 4)) % 4
-    const padded = normalized + '='.repeat(paddingLength)
-    const binary = atob(padded)
-    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0))
-    const parsed = JSON.parse(new TextDecoder().decode(bytes))
-    return sanitizeConfig(parsed)
+    const normalized = cfg.replace(/-/g, "+").replace(/_/g, "/");
+    const paddingLength = (4 - (normalized.length % 4)) % 4;
+    const padded = normalized + "=".repeat(paddingLength);
+    const binary = atob(padded);
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    const parsed = JSON.parse(new TextDecoder().decode(bytes));
+    return sanitizeConfig(parsed);
   } catch {
-    return undefined
+    return undefined;
   }
 }
 
 function decodeConfig(cfg: string | null): TextEffectConfig {
   if (!cfg) {
-    return DEFAULT_CONFIG
+    return DEFAULT_CONFIG;
   }
 
-  return tryDecodeConfigValue(cfg) ?? DEFAULT_CONFIG
+  return tryDecodeConfigValue(cfg) ?? DEFAULT_CONFIG;
 }
 
-function parseConfigFromPastedRenderUrl(rawInput: string): TextEffectConfig | undefined {
-  const trimmed = rawInput.trim()
+function parseConfigFromPastedRenderUrl(
+  rawInput: string,
+): TextEffectConfig | undefined {
+  const trimmed = rawInput.trim();
   if (trimmed.length === 0) {
-    return undefined
+    return undefined;
   }
 
-  const candidates: string[] = []
+  const candidates: string[] = [];
 
   try {
-    const parsedUrl = new URL(trimmed, window.location.origin)
-    const cfg = parsedUrl.searchParams.get('cfg')
+    const parsedUrl = new URL(trimmed, window.location.origin);
+    const cfg = parsedUrl.searchParams.get("cfg");
     if (cfg) {
-      candidates.push(cfg)
+      candidates.push(cfg);
     }
   } catch {
     // no-op
   }
 
-  const params = new URLSearchParams(trimmed.startsWith('?') ? trimmed.slice(1) : trimmed)
-  const cfgFromParams = params.get('cfg')
+  const params = new URLSearchParams(
+    trimmed.startsWith("?") ? trimmed.slice(1) : trimmed,
+  );
+  const cfgFromParams = params.get("cfg");
   if (cfgFromParams) {
-    candidates.push(cfgFromParams)
+    candidates.push(cfgFromParams);
   }
 
-  candidates.push(trimmed)
+  candidates.push(trimmed);
 
   for (const candidate of candidates) {
-    const decoded = tryDecodeConfigValue(candidate)
+    const decoded = tryDecodeConfigValue(candidate);
     if (decoded) {
-      return decoded
+      return decoded;
     }
   }
 
-  return undefined
+  return undefined;
 }
 
 function stripQuotes(value: string): string {
-  const trimmed = value.trim()
+  const trimmed = value.trim();
   if (
     (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
     (trimmed.startsWith("'") && trimmed.endsWith("'"))
   ) {
-    return trimmed.slice(1, -1)
+    return trimmed.slice(1, -1);
   }
-  return trimmed
+  return trimmed;
 }
 
-function getSlideVector(direction: SlideDirection, distance: number): { x: number; y: number } {
+function getSlideVector(
+  direction: SlideDirection,
+  distance: number,
+): { x: number; y: number } {
   switch (direction) {
-    case 'left':
-      return { x: -distance, y: 0 }
-    case 'right':
-      return { x: distance, y: 0 }
-    case 'up':
-      return { x: 0, y: -distance }
-    case 'down':
-      return { x: 0, y: distance }
+    case "left":
+      return { x: -distance, y: 0 };
+    case "right":
+      return { x: distance, y: 0 };
+    case "up":
+      return { x: 0, y: -distance };
+    case "down":
+      return { x: 0, y: distance };
   }
 }
 
 function applyCssOverrides(base: TextEffectConfig): TextEffectConfig {
-  const rootStyle = getComputedStyle(document.documentElement)
-  const bodyStyle = document.body ? getComputedStyle(document.body) : undefined
+  const rootStyle = getComputedStyle(document.documentElement);
+  const bodyStyle = document.body ? getComputedStyle(document.body) : undefined;
   const readCssVar = (name: string): string => {
-    const rootValue = stripQuotes(rootStyle.getPropertyValue(name))
+    const rootValue = stripQuotes(rootStyle.getPropertyValue(name));
     if (rootValue.length > 0) {
-      return rootValue
+      return rootValue;
     }
     if (!bodyStyle) {
-      return ''
+      return "";
     }
-    return stripQuotes(bodyStyle.getPropertyValue(name))
-  }
+    return stripQuotes(bodyStyle.getPropertyValue(name));
+  };
 
-  const text = readCssVar('--te-text')
-  const fontFamily = readCssVar('--te-font-family')
-  const color = readCssVar('--te-color')
-  const colorOpacity = readCssVar('--te-color-opacity')
-  const fontSize = readCssVar('--te-font-size')
-  const fontWeight = readCssVar('--te-font-weight')
-  const letterSpacing = readCssVar('--te-letter-spacing')
-  const strokeWidth = readCssVar('--te-stroke-width')
-  const strokeColor = readCssVar('--te-stroke-color')
-  const strokeOpacity = readCssVar('--te-stroke-opacity')
-  const backgroundColor = readCssVar('--te-background-color')
-  const backgroundOpacity = readCssVar('--te-background-opacity')
-  const shadowEnabled = readCssVar('--te-shadow-enabled')
-  const shadowX = readCssVar('--te-shadow-x')
-  const shadowY = readCssVar('--te-shadow-y')
-  const shadowBlur = readCssVar('--te-shadow-blur')
-  const shadowSpread = readCssVar('--te-shadow-spread')
-  const shadowColor = readCssVar('--te-shadow-color')
-  const shadowOpacity = readCssVar('--te-shadow-opacity')
-  const animationPreset = readCssVar('--te-animation-preset')
-  const animationDuration = readCssVar('--te-animation-duration')
-  const scrollEnabled = readCssVar('--te-scroll-enabled')
-  const scrollDirection = readCssVar('--te-scroll-direction')
-  const scrollSpeed = readCssVar('--te-scroll-speed')
-  const blinkEnabled = readCssVar('--te-blink-enabled')
-  const blinkPeriod = readCssVar('--te-blink-period')
-  const blinkDutyCycle = readCssVar('--te-blink-duty-cycle')
+  const text = readCssVar("--te-text");
+  const fontFamily = readCssVar("--te-font-family");
+  const color = readCssVar("--te-color");
+  const colorOpacity = readCssVar("--te-color-opacity");
+  const fontSize = readCssVar("--te-font-size");
+  const fontWeight = readCssVar("--te-font-weight");
+  const letterSpacing = readCssVar("--te-letter-spacing");
+  const strokeWidth = readCssVar("--te-stroke-width");
+  const strokeColor = readCssVar("--te-stroke-color");
+  const strokeOpacity = readCssVar("--te-stroke-opacity");
+  const backgroundColor = readCssVar("--te-background-color");
+  const backgroundOpacity = readCssVar("--te-background-opacity");
+  const shadowEnabled = readCssVar("--te-shadow-enabled");
+  const shadowX = readCssVar("--te-shadow-x");
+  const shadowY = readCssVar("--te-shadow-y");
+  const shadowBlur = readCssVar("--te-shadow-blur");
+  const shadowSpread = readCssVar("--te-shadow-spread");
+  const shadowColor = readCssVar("--te-shadow-color");
+  const shadowOpacity = readCssVar("--te-shadow-opacity");
+  const animationPreset = readCssVar("--te-animation-preset");
+  const animationDuration = readCssVar("--te-animation-duration");
+  const scrollEnabled = readCssVar("--te-scroll-enabled");
+  const scrollDirection = readCssVar("--te-scroll-direction");
+  const scrollSpeed = readCssVar("--te-scroll-speed");
+  const blinkEnabled = readCssVar("--te-blink-enabled");
+  const blinkPeriod = readCssVar("--te-blink-period");
+  const blinkDutyCycle = readCssVar("--te-blink-duty-cycle");
 
   return sanitizeConfig({
     ...base,
@@ -591,17 +742,17 @@ function applyCssOverrides(base: TextEffectConfig): TextEffectConfig {
       period: blinkPeriod || base.blink.period,
       dutyCycle: blinkDutyCycle || base.blink.dutyCycle,
     },
-  })
+  });
 }
 
 function getRenderConfigFromLocation(search: string): TextEffectConfig {
-  const params = new URLSearchParams(search)
-  return decodeConfig(params.get('cfg'))
+  const params = new URLSearchParams(search);
+  return decodeConfig(params.get("cfg"));
 }
 
 function isRenderMode(search: string): boolean {
-  const params = new URLSearchParams(search)
-  return params.get('mode') === 'render'
+  const params = new URLSearchParams(search);
+  return params.get("mode") === "render";
 }
 
 function ColorWithAlphaField({
@@ -611,19 +762,23 @@ function ColorWithAlphaField({
   onColorChange,
   onOpacityChange,
 }: {
-  label: string
-  color: string
-  opacity: number
-  onColorChange: (value: string) => void
-  onOpacityChange: (value: number) => void
+  label: string;
+  color: string;
+  opacity: number;
+  onColorChange: (value: string) => void;
+  onOpacityChange: (value: number) => void;
 }): ReactElement {
-  const rgbaValue = hexToRgba(color, opacity)
+  const rgbaValue = hexToRgba(color, opacity);
   return (
     <label>
       {label}
       <div className="color-control">
         <div className="color-picker-row">
-          <input type="color" value={color} onChange={(event) => onColorChange(event.target.value)} />
+          <input
+            type="color"
+            value={color}
+            onChange={(event) => onColorChange(event.target.value)}
+          />
           <span className="color-code">{color.toUpperCase()}</span>
         </div>
         <div className="alpha-row">
@@ -640,78 +795,94 @@ function ColorWithAlphaField({
         <span className="rgba-preview">{rgbaValue}</span>
       </div>
     </label>
-  )
+  );
 }
 
 function EditorPage(): ReactElement {
-  const [config, setConfig] = useState<TextEffectConfig>(DEFAULT_CONFIG)
-  const [copied, setCopied] = useState(false)
-  const [previewSize, setPreviewSize] = useState<PreviewSize>('1920x1080')
-  const [previewBackground, setPreviewBackground] = useState<PreviewBackground>('checker')
-  const [importSourceUrl, setImportSourceUrl] = useState('')
-  const [importStatus, setImportStatus] = useState<{ type: 'ok' | 'error'; message: string } | null>(null)
+  const [config, setConfig] = useState<TextEffectConfig>(DEFAULT_CONFIG);
+  const [copied, setCopied] = useState(false);
+  const [previewSize, setPreviewSize] = useState<PreviewSize>("1920x1080");
+  const [previewBackground, setPreviewBackground] =
+    useState<PreviewBackground>("checker");
+  const [importSourceUrl, setImportSourceUrl] = useState("");
+  const [importStatus, setImportStatus] = useState<{
+    type: "ok" | "error";
+    message: string;
+  } | null>(null);
 
   const renderUrl = useMemo(() => {
-    const url = new URL(window.location.href)
-    url.search = ''
-    url.searchParams.set('mode', 'render')
-    url.searchParams.set('cfg', encodeConfig(config))
-    return url.toString()
-  }, [config])
+    const url = new URL(window.location.href);
+    url.search = "";
+    url.searchParams.set("mode", "render");
+    url.searchParams.set("cfg", encodeConfig(config));
+    return url.toString();
+  }, [config]);
 
   const selectedPreviewSize =
-    PREVIEW_SIZE_OPTIONS.find((option) => option.id === previewSize) ?? PREVIEW_SIZE_OPTIONS[0]
+    PREVIEW_SIZE_OPTIONS.find((option) => option.id === previewSize) ??
+    PREVIEW_SIZE_OPTIONS[0];
 
   const setByPath = (path: string, value: unknown) => {
-    const keys = path.split('.')
-    const update = (target: Record<string, unknown>, index: number): Record<string, unknown> => {
-      const key = keys[index]
+    const keys = path.split(".");
+    const update = (
+      target: Record<string, unknown>,
+      index: number,
+    ): Record<string, unknown> => {
+      const key = keys[index];
       if (index === keys.length - 1) {
         return {
           ...target,
           [key]: value,
-        }
+        };
       }
 
-      const child = target[key]
-      const childObject = child && typeof child === 'object' ? (child as Record<string, unknown>) : {}
+      const child = target[key];
+      const childObject =
+        child && typeof child === "object"
+          ? (child as Record<string, unknown>)
+          : {};
       return {
         ...target,
         [key]: update(childObject, index + 1),
-      }
-    }
+      };
+    };
 
-    setConfig((prev) => sanitizeConfig(update(prev as unknown as Record<string, unknown>, 0)))
-  }
+    setConfig((prev) =>
+      sanitizeConfig(update(prev as unknown as Record<string, unknown>, 0)),
+    );
+  };
 
-  const setNumber = (path: string, value: number) => setByPath(path, value)
-  const setString = (path: string, value: string) => setByPath(path, value)
-  const setBoolean = (path: string, value: boolean) => setByPath(path, value)
+  const setNumber = (path: string, value: number) => setByPath(path, value);
+  const setString = (path: string, value: string) => setByPath(path, value);
+  const setBoolean = (path: string, value: boolean) => setByPath(path, value);
 
   const copyUrl = async () => {
-    await navigator.clipboard.writeText(renderUrl)
-    setCopied(true)
-    window.setTimeout(() => setCopied(false), 1500)
-  }
+    await navigator.clipboard.writeText(renderUrl);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1500);
+  };
 
   const importFromRenderUrl = () => {
-    const imported = parseConfigFromPastedRenderUrl(importSourceUrl)
+    const imported = parseConfigFromPastedRenderUrl(importSourceUrl);
     if (!imported) {
       setImportStatus({
-        type: 'error',
-        message: 'URLの解析に失敗しました。mode=render&cfg=... のURLを貼り付けてください。',
-      })
-      return
+        type: "error",
+        message:
+          "URLの解析に失敗しました。mode=render&cfg=... のURLを貼り付けてください。",
+      });
+      return;
     }
 
-    setConfig(imported)
-    setImportStatus({ type: 'ok', message: '設定を読み込みました。' })
-  }
+    setConfig(imported);
+    setImportStatus({ type: "ok", message: "設定を読み込みました。" });
+  };
 
   return (
     <main className="editor-page">
       <h1>テキストエフェクト URL 生成</h1>
-      <p className="description">OBS Browser Source向けの透過テキストエフェクトURLを生成します。</p>
+      <p className="description">
+        OBS Browser Source向けの透過テキストエフェクトURLを生成します。
+      </p>
 
       <div className="editor-layout">
         <div className="editor-controls">
@@ -719,36 +890,59 @@ function EditorPage(): ReactElement {
             <h2>テキスト</h2>
             <label>
               表示文字
-              <textarea value={config.text} onChange={(event) => setString('text', event.target.value)} rows={4} />
+              <textarea
+                value={config.text}
+                onChange={(event) => setString("text", event.target.value)}
+                rows={4}
+              />
             </label>
             <div className="grid two">
               <ColorWithAlphaField
                 label="文字色"
                 color={config.color}
                 opacity={config.colorOpacity}
-                onColorChange={(value) => setString('color', value)}
-                onOpacityChange={(value) => setNumber('colorOpacity', value)}
+                onColorChange={(value) => setString("color", value)}
+                onOpacityChange={(value) => setNumber("colorOpacity", value)}
               />
               <ColorWithAlphaField
                 label="背景色"
                 color={config.backgroundColor}
                 opacity={config.backgroundOpacity}
-                onColorChange={(value) => setString('backgroundColor', value)}
-                onOpacityChange={(value) => setNumber('backgroundOpacity', value)}
+                onColorChange={(value) => setString("backgroundColor", value)}
+                onOpacityChange={(value) =>
+                  setNumber("backgroundOpacity", value)
+                }
               />
               <label>
                 フォント
-                <select value={config.fontFamily} onChange={(event) => setString('fontFamily', event.target.value)}>
+                <select
+                  value={config.fontFamily}
+                  onChange={(event) =>
+                    setString("fontFamily", event.target.value)
+                  }
+                >
                   <optgroup label="日本語対応フォント">
-                    {FONT_FAMILY_OPTIONS.filter((option) => option.language === 'ja').map((option) => (
-                      <option key={option.value} value={option.value} style={{ fontFamily: option.value }}>
+                    {FONT_FAMILY_OPTIONS.filter(
+                      (option) => option.language === "ja",
+                    ).map((option) => (
+                      <option
+                        key={option.value}
+                        value={option.value}
+                        style={{ fontFamily: option.value }}
+                      >
                         {option.label}
                       </option>
                     ))}
                   </optgroup>
                   <optgroup label="英語向けフォント">
-                    {FONT_FAMILY_OPTIONS.filter((option) => option.language === 'en').map((option) => (
-                      <option key={option.value} value={option.value} style={{ fontFamily: option.value }}>
+                    {FONT_FAMILY_OPTIONS.filter(
+                      (option) => option.language === "en",
+                    ).map((option) => (
+                      <option
+                        key={option.value}
+                        value={option.value}
+                        style={{ fontFamily: option.value }}
+                      >
                         {option.label}
                       </option>
                     ))}
@@ -762,14 +956,18 @@ function EditorPage(): ReactElement {
                   value={config.fontSize}
                   min={8}
                   max={320}
-                  onChange={(event) => setNumber('fontSize', Number(event.target.value))}
+                  onChange={(event) =>
+                    setNumber("fontSize", Number(event.target.value))
+                  }
                 />
               </label>
               <label>
                 フォント太さ
                 <select
                   value={config.fontWeight}
-                  onChange={(event) => setNumber('fontWeight', Number(event.target.value))}
+                  onChange={(event) =>
+                    setNumber("fontWeight", Number(event.target.value))
+                  }
                 >
                   {FONT_WEIGHT_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -786,7 +984,9 @@ function EditorPage(): ReactElement {
                   min={-12}
                   max={30}
                   step={0.1}
-                  onChange={(event) => setNumber('letterSpacing', Number(event.target.value))}
+                  onChange={(event) =>
+                    setNumber("letterSpacing", Number(event.target.value))
+                  }
                 />
               </label>
               <label>
@@ -797,21 +997,28 @@ function EditorPage(): ReactElement {
                   min={0}
                   max={30}
                   step={0.5}
-                  onChange={(event) => setNumber('strokeWidth', Number(event.target.value))}
+                  onChange={(event) =>
+                    setNumber("strokeWidth", Number(event.target.value))
+                  }
                 />
               </label>
               <ColorWithAlphaField
                 label="縁取り色"
                 color={config.strokeColor}
                 opacity={config.strokeOpacity}
-                onColorChange={(value) => setString('strokeColor', value)}
-                onOpacityChange={(value) => setNumber('strokeOpacity', value)}
+                onColorChange={(value) => setString("strokeColor", value)}
+                onOpacityChange={(value) => setNumber("strokeOpacity", value)}
               />
               <label>
                 横位置
                 <select
                   value={config.horizontalAlign}
-                  onChange={(event) => setString('horizontalAlign', event.target.value as HorizontalAlign)}
+                  onChange={(event) =>
+                    setString(
+                      "horizontalAlign",
+                      event.target.value as HorizontalAlign,
+                    )
+                  }
                 >
                   <option value="left">左</option>
                   <option value="center">中央</option>
@@ -822,7 +1029,12 @@ function EditorPage(): ReactElement {
                 縦位置
                 <select
                   value={config.verticalAlign}
-                  onChange={(event) => setString('verticalAlign', event.target.value as VerticalAlign)}
+                  onChange={(event) =>
+                    setString(
+                      "verticalAlign",
+                      event.target.value as VerticalAlign,
+                    )
+                  }
                 >
                   <option value="top">上</option>
                   <option value="center">中央</option>
@@ -837,7 +1049,9 @@ function EditorPage(): ReactElement {
                   min={0}
                   max={400}
                   step={1}
-                  onChange={(event) => setNumber('paddingX', Number(event.target.value))}
+                  onChange={(event) =>
+                    setNumber("paddingX", Number(event.target.value))
+                  }
                 />
               </label>
               <label>
@@ -848,7 +1062,9 @@ function EditorPage(): ReactElement {
                   min={0}
                   max={400}
                   step={1}
-                  onChange={(event) => setNumber('paddingY', Number(event.target.value))}
+                  onChange={(event) =>
+                    setNumber("paddingY", Number(event.target.value))
+                  }
                 />
               </label>
             </div>
@@ -860,7 +1076,9 @@ function EditorPage(): ReactElement {
               <input
                 type="checkbox"
                 checked={config.shadow.enabled}
-                onChange={(event) => setBoolean('shadow.enabled', event.target.checked)}
+                onChange={(event) =>
+                  setBoolean("shadow.enabled", event.target.checked)
+                }
               />
               シャドウを有効化
             </label>
@@ -873,7 +1091,9 @@ function EditorPage(): ReactElement {
                   min={-400}
                   max={400}
                   step={1}
-                  onChange={(event) => setNumber('shadow.x', Number(event.target.value))}
+                  onChange={(event) =>
+                    setNumber("shadow.x", Number(event.target.value))
+                  }
                 />
               </label>
               <label>
@@ -884,7 +1104,9 @@ function EditorPage(): ReactElement {
                   min={-400}
                   max={400}
                   step={1}
-                  onChange={(event) => setNumber('shadow.y', Number(event.target.value))}
+                  onChange={(event) =>
+                    setNumber("shadow.y", Number(event.target.value))
+                  }
                 />
               </label>
               <label>
@@ -895,7 +1117,9 @@ function EditorPage(): ReactElement {
                   min={0}
                   max={400}
                   step={1}
-                  onChange={(event) => setNumber('shadow.blur', Number(event.target.value))}
+                  onChange={(event) =>
+                    setNumber("shadow.blur", Number(event.target.value))
+                  }
                 />
               </label>
               <label>
@@ -906,15 +1130,17 @@ function EditorPage(): ReactElement {
                   min={-200}
                   max={200}
                   step={1}
-                  onChange={(event) => setNumber('shadow.spread', Number(event.target.value))}
+                  onChange={(event) =>
+                    setNumber("shadow.spread", Number(event.target.value))
+                  }
                 />
               </label>
               <ColorWithAlphaField
                 label="影色"
                 color={config.shadow.color}
                 opacity={config.shadow.opacity}
-                onColorChange={(value) => setString('shadow.color', value)}
-                onOpacityChange={(value) => setNumber('shadow.opacity', value)}
+                onColorChange={(value) => setString("shadow.color", value)}
+                onOpacityChange={(value) => setNumber("shadow.opacity", value)}
               />
             </div>
           </section>
@@ -926,7 +1152,12 @@ function EditorPage(): ReactElement {
                 プリセット
                 <select
                   value={config.animation.preset}
-                  onChange={(event) => setString('animation.preset', event.target.value as AnimationPreset)}
+                  onChange={(event) =>
+                    setString(
+                      "animation.preset",
+                      event.target.value as AnimationPreset,
+                    )
+                  }
                 >
                   <option value="none">なし</option>
                   <option value="fade">フェード</option>
@@ -942,7 +1173,9 @@ function EditorPage(): ReactElement {
                   min={0.1}
                   max={120}
                   step={0.1}
-                  onChange={(event) => setNumber('animation.duration', Number(event.target.value))}
+                  onChange={(event) =>
+                    setNumber("animation.duration", Number(event.target.value))
+                  }
                 />
               </label>
               <label>
@@ -953,7 +1186,9 @@ function EditorPage(): ReactElement {
                   min={0}
                   max={60}
                   step={0.1}
-                  onChange={(event) => setNumber('animation.delay', Number(event.target.value))}
+                  onChange={(event) =>
+                    setNumber("animation.delay", Number(event.target.value))
+                  }
                 />
               </label>
               <label>
@@ -964,14 +1199,24 @@ function EditorPage(): ReactElement {
                   min={0}
                   max={1000}
                   step={1}
-                  onChange={(event) => setNumber('animation.iterations', Number(event.target.value))}
+                  onChange={(event) =>
+                    setNumber(
+                      "animation.iterations",
+                      Number(event.target.value),
+                    )
+                  }
                 />
               </label>
               <label>
                 スライド方向
                 <select
                   value={config.animation.slideDirection}
-                  onChange={(event) => setString('animation.slideDirection', event.target.value as SlideDirection)}
+                  onChange={(event) =>
+                    setString(
+                      "animation.slideDirection",
+                      event.target.value as SlideDirection,
+                    )
+                  }
                 >
                   <option value="left">左</option>
                   <option value="right">右</option>
@@ -987,7 +1232,12 @@ function EditorPage(): ReactElement {
                   min={0}
                   max={2000}
                   step={1}
-                  onChange={(event) => setNumber('animation.slideDistance', Number(event.target.value))}
+                  onChange={(event) =>
+                    setNumber(
+                      "animation.slideDistance",
+                      Number(event.target.value),
+                    )
+                  }
                 />
               </label>
               <label>
@@ -998,14 +1248,21 @@ function EditorPage(): ReactElement {
                   min={1}
                   max={3}
                   step={0.01}
-                  onChange={(event) => setNumber('animation.pulseScale', Number(event.target.value))}
+                  onChange={(event) =>
+                    setNumber(
+                      "animation.pulseScale",
+                      Number(event.target.value),
+                    )
+                  }
                 />
               </label>
               <label className="checkbox">
                 <input
                   type="checkbox"
                   checked={config.animation.alternate}
-                  onChange={(event) => setBoolean('animation.alternate', event.target.checked)}
+                  onChange={(event) =>
+                    setBoolean("animation.alternate", event.target.checked)
+                  }
                 />
                 交互再生
               </label>
@@ -1018,7 +1275,9 @@ function EditorPage(): ReactElement {
               <input
                 type="checkbox"
                 checked={config.scroll.enabled}
-                onChange={(event) => setBoolean('scroll.enabled', event.target.checked)}
+                onChange={(event) =>
+                  setBoolean("scroll.enabled", event.target.checked)
+                }
               />
               スクロールを有効化
             </label>
@@ -1027,7 +1286,12 @@ function EditorPage(): ReactElement {
                 方向
                 <select
                   value={config.scroll.direction}
-                  onChange={(event) => setString('scroll.direction', event.target.value as ScrollDirection)}
+                  onChange={(event) =>
+                    setString(
+                      "scroll.direction",
+                      event.target.value as ScrollDirection,
+                    )
+                  }
                 >
                   <option value="left">左</option>
                   <option value="right">右</option>
@@ -1043,7 +1307,9 @@ function EditorPage(): ReactElement {
                   min={1}
                   max={40}
                   step={1}
-                  onChange={(event) => setNumber('scroll.speed', Number(event.target.value))}
+                  onChange={(event) =>
+                    setNumber("scroll.speed", Number(event.target.value))
+                  }
                 />
               </label>
               <label>
@@ -1054,7 +1320,9 @@ function EditorPage(): ReactElement {
                   min={0}
                   max={600}
                   step={1}
-                  onChange={(event) => setNumber('scroll.gap', Number(event.target.value))}
+                  onChange={(event) =>
+                    setNumber("scroll.gap", Number(event.target.value))
+                  }
                 />
               </label>
             </div>
@@ -1066,7 +1334,9 @@ function EditorPage(): ReactElement {
               <input
                 type="checkbox"
                 checked={config.blink.enabled}
-                onChange={(event) => setBoolean('blink.enabled', event.target.checked)}
+                onChange={(event) =>
+                  setBoolean("blink.enabled", event.target.checked)
+                }
               />
               点滅を有効化
             </label>
@@ -1079,7 +1349,9 @@ function EditorPage(): ReactElement {
                   min={0.1}
                   max={30}
                   step={0.1}
-                  onChange={(event) => setNumber('blink.period', Number(event.target.value))}
+                  onChange={(event) =>
+                    setNumber("blink.period", Number(event.target.value))
+                  }
                 />
               </label>
               <label>
@@ -1090,7 +1362,9 @@ function EditorPage(): ReactElement {
                   min={0.05}
                   max={1}
                   step={0.05}
-                  onChange={(event) => setNumber('blink.dutyCycle', Number(event.target.value))}
+                  onChange={(event) =>
+                    setNumber("blink.dutyCycle", Number(event.target.value))
+                  }
                 />
               </label>
             </div>
@@ -1103,7 +1377,12 @@ function EditorPage(): ReactElement {
             <div className="preview-toolbar">
               <label>
                 解像度
-                <select value={previewSize} onChange={(event) => setPreviewSize(event.target.value as PreviewSize)}>
+                <select
+                  value={previewSize}
+                  onChange={(event) =>
+                    setPreviewSize(event.target.value as PreviewSize)
+                  }
+                >
                   {PREVIEW_SIZE_OPTIONS.map((option) => (
                     <option key={option.id} value={option.id}>
                       {option.label}
@@ -1115,7 +1394,11 @@ function EditorPage(): ReactElement {
                 背景
                 <select
                   value={previewBackground}
-                  onChange={(event) => setPreviewBackground(event.target.value as PreviewBackground)}
+                  onChange={(event) =>
+                    setPreviewBackground(
+                      event.target.value as PreviewBackground,
+                    )
+                  }
                 >
                   {PREVIEW_BACKGROUND_OPTIONS.map((option) => (
                     <option key={option.id} value={option.id}>
@@ -1130,10 +1413,15 @@ function EditorPage(): ReactElement {
             </p>
             <div
               className={`preview-stage preview-bg-${previewBackground}`}
-              style={{ aspectRatio: `${selectedPreviewSize.width} / ${selectedPreviewSize.height}` }}
+              style={{
+                aspectRatio: `${selectedPreviewSize.width} / ${selectedPreviewSize.height}`,
+              }}
             >
               <div className="preview-canvas">
-                <TextEffectRenderer config={config} className="preview-render" />
+                <TextEffectRenderer
+                  config={config}
+                  className="preview-render"
+                />
               </div>
             </div>
           </section>
@@ -1143,14 +1431,15 @@ function EditorPage(): ReactElement {
             <textarea value={renderUrl} readOnly rows={4} />
             <div className="actions">
               <button type="button" onClick={copyUrl}>
-                {copied ? 'コピー済み' : 'URLをコピー'}
+                {copied ? "コピー済み" : "URLをコピー"}
               </button>
               <a href={renderUrl} target="_blank" rel="noreferrer">
                 別タブで確認
               </a>
             </div>
             <p className="hint">
-              OBS側のカスタムCSS変数で `--te-text` を設定すると、URL指定より優先して文字列を上書きできます。
+              OBS側のカスタムCSS変数で `--te-text`
+              を設定すると、URL指定より優先して文字列を上書きできます。
             </p>
             <label>
               既存のレンダーURLから設定を読み込む
@@ -1167,109 +1456,133 @@ function EditorPage(): ReactElement {
               </button>
             </div>
             {importStatus && (
-              <p className={`hint import-status ${importStatus.type === 'error' ? 'is-error' : 'is-ok'}`}>{importStatus.message}</p>
+              <p
+                className={`hint import-status ${importStatus.type === "error" ? "is-error" : "is-ok"}`}
+              >
+                {importStatus.message}
+              </p>
             )}
           </section>
 
           <details className="panel accordion-panel">
             <summary>OBS CSS変数の例</summary>
             <pre>
-{`--te-text: "Override from OBS";
---te-color: #ffcc00;
---te-color-opacity: 1;
---te-font-family: "'Yu Gothic', sans-serif";
---te-font-size: 80;
---te-stroke-color: #000000;
---te-stroke-opacity: 1;
---te-background-color: #002244;
---te-background-opacity: 0.4;
---te-shadow-enabled: true;
---te-shadow-color: #000000;
---te-shadow-opacity: 0.8;
---te-animation-preset: pulse;
---te-scroll-enabled: true;
---te-scroll-direction: left;
---te-scroll-speed: 12;
---te-blink-enabled: true;`}
+              {`:root {
+  --te-text: "Override from OBS";
+  --te-color: #ffcc00;
+  --te-color-opacity: 1;
+  --te-font-family: "'Yu Gothic', sans-serif";
+  --te-font-size: 80;
+  --te-stroke-color: #000000;
+  --te-stroke-opacity: 1;
+  --te-background-color: #002244;
+  --te-background-opacity: 0.4;
+  --te-shadow-enabled: true;
+  --te-shadow-color: #000000;
+  --te-shadow-opacity: 0.8;
+  --te-animation-preset: pulse;
+  --te-scroll-enabled: true;
+  --te-scroll-direction: left;
+  --te-scroll-speed: 12;
+  --te-blink-enabled: true;
+}`}
             </pre>
           </details>
         </aside>
       </div>
     </main>
-  )
+  );
 }
 
-function TextEffectRenderer({ config, className }: { config: TextEffectConfig; className?: string }): ReactElement {
-  const [blinkVisible, setBlinkVisible] = useState(true)
-  const scrollMeasureRef = useRef<HTMLDivElement | null>(null)
-  const scrollViewportRef = useRef<HTMLDivElement | null>(null)
-  const [scrollMetrics, setScrollMetrics] = useState({ distance: 1, repeatCount: 2 })
-  const isHorizontal = config.scroll.direction === 'left' || config.scroll.direction === 'right'
+function TextEffectRenderer({
+  config,
+  className,
+}: {
+  config: TextEffectConfig;
+  className?: string;
+}): ReactElement {
+  const [blinkVisible, setBlinkVisible] = useState(true);
+  const scrollMeasureRef = useRef<HTMLDivElement | null>(null);
+  const scrollViewportRef = useRef<HTMLDivElement | null>(null);
+  const [scrollMetrics, setScrollMetrics] = useState({
+    distance: 1,
+    repeatCount: 2,
+  });
+  const isHorizontal =
+    config.scroll.direction === "left" || config.scroll.direction === "right";
 
   useEffect(() => {
     if (!config.blink.enabled) {
-      return
+      return;
     }
 
-    const periodMs = config.blink.period * 1000
-    const onDurationMs = clamp(config.blink.dutyCycle * periodMs, 10, periodMs)
+    const periodMs = config.blink.period * 1000;
+    const onDurationMs = clamp(config.blink.dutyCycle * periodMs, 10, periodMs);
 
-    let offTimeout: number | undefined
+    let offTimeout: number | undefined;
     const cycle = () => {
-      setBlinkVisible(true)
-      offTimeout = window.setTimeout(() => setBlinkVisible(false), onDurationMs)
-    }
+      setBlinkVisible(true);
+      offTimeout = window.setTimeout(
+        () => setBlinkVisible(false),
+        onDurationMs,
+      );
+    };
 
-    cycle()
-    const intervalId = window.setInterval(cycle, periodMs)
+    cycle();
+    const intervalId = window.setInterval(cycle, periodMs);
 
     return () => {
-      window.clearInterval(intervalId)
+      window.clearInterval(intervalId);
       if (offTimeout !== undefined) {
-        window.clearTimeout(offTimeout)
+        window.clearTimeout(offTimeout);
       }
-    }
-  }, [config.blink.enabled, config.blink.period, config.blink.dutyCycle])
+    };
+  }, [config.blink.enabled, config.blink.period, config.blink.dutyCycle]);
 
   useLayoutEffect(() => {
     if (!config.scroll.enabled) {
-      return
+      return;
     }
 
     const measure = () => {
-      const measureNode = scrollMeasureRef.current
-      const viewportNode = scrollViewportRef.current
+      const measureNode = scrollMeasureRef.current;
+      const viewportNode = scrollViewportRef.current;
       if (!measureNode || !viewportNode) {
-        return
+        return;
       }
 
-      const contentRect = measureNode.getBoundingClientRect()
-      const viewportRect = viewportNode.getBoundingClientRect()
-      const contentSize = isHorizontal ? contentRect.width : contentRect.height
-      const viewportSize = isHorizontal ? viewportRect.width : viewportRect.height
-      const distance = Math.max(1, Math.ceil(contentSize + config.scroll.gap))
-      const repeatCount = Math.max(2, Math.ceil(viewportSize / distance) + 2)
+      const contentRect = measureNode.getBoundingClientRect();
+      const viewportRect = viewportNode.getBoundingClientRect();
+      const contentSize = isHorizontal ? contentRect.width : contentRect.height;
+      const viewportSize = isHorizontal
+        ? viewportRect.width
+        : viewportRect.height;
+      const distance = Math.max(1, Math.ceil(contentSize + config.scroll.gap));
+      const repeatCount = Math.max(2, Math.ceil(viewportSize / distance) + 2);
 
       setScrollMetrics((prev) => {
         if (prev.distance === distance && prev.repeatCount === repeatCount) {
-          return prev
+          return prev;
         }
-        return { distance, repeatCount }
-      })
-    }
+        return { distance, repeatCount };
+      });
+    };
 
-    measure()
-    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : undefined
+    measure();
+    const observer =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(measure)
+        : undefined;
     if (observer && scrollMeasureRef.current && scrollViewportRef.current) {
-      observer.observe(scrollMeasureRef.current)
-      observer.observe(scrollViewportRef.current)
+      observer.observe(scrollMeasureRef.current);
+      observer.observe(scrollViewportRef.current);
     }
-    window.addEventListener('resize', measure)
+    window.addEventListener("resize", measure);
 
     return () => {
-      window.removeEventListener('resize', measure)
-      observer?.disconnect()
-    }
+      window.removeEventListener("resize", measure);
+      observer?.disconnect();
+    };
   }, [
     config.scroll.enabled,
     config.scroll.gap,
@@ -1281,42 +1594,45 @@ function TextEffectRenderer({ config, className }: { config: TextEffectConfig; c
     config.paddingX,
     config.paddingY,
     isHorizontal,
-  ])
+  ]);
 
-  const effectiveBlinkVisible = config.blink.enabled ? blinkVisible : true
+  const effectiveBlinkVisible = config.blink.enabled ? blinkVisible : true;
 
   const { animationName, customVars } = useMemo(() => {
-    if (config.animation.preset === 'none') {
-      return { animationName: undefined, customVars: {} as CSSProperties }
+    if (config.animation.preset === "none") {
+      return { animationName: undefined, customVars: {} as CSSProperties };
     }
 
-    if (config.animation.preset === 'fade') {
-      return { animationName: 'te-fade', customVars: {} as CSSProperties }
+    if (config.animation.preset === "fade") {
+      return { animationName: "te-fade", customVars: {} as CSSProperties };
     }
 
-    if (config.animation.preset === 'pulse') {
+    if (config.animation.preset === "pulse") {
       return {
-        animationName: 'te-pulse',
+        animationName: "te-pulse",
         customVars: {
-          '--te-pulse-scale': String(config.animation.pulseScale),
+          "--te-pulse-scale": String(config.animation.pulseScale),
         } as CSSProperties,
-      }
+      };
     }
 
-    const vector = getSlideVector(config.animation.slideDirection, config.animation.slideDistance)
+    const vector = getSlideVector(
+      config.animation.slideDirection,
+      config.animation.slideDistance,
+    );
     return {
-      animationName: 'te-slide',
+      animationName: "te-slide",
       customVars: {
-        '--te-slide-x': `${vector.x}px`,
-        '--te-slide-y': `${vector.y}px`,
+        "--te-slide-x": `${vector.x}px`,
+        "--te-slide-y": `${vector.y}px`,
       } as CSSProperties,
-    }
+    };
   }, [
     config.animation.preset,
     config.animation.pulseScale,
     config.animation.slideDirection,
     config.animation.slideDistance,
-  ])
+  ]);
 
   const baseTextStyle: CSSProperties = {
     ...customVars,
@@ -1327,26 +1643,34 @@ function TextEffectRenderer({ config, className }: { config: TextEffectConfig; c
     letterSpacing: `${config.letterSpacing}px`,
     WebkitTextStroke: `${config.strokeWidth}px ${hexToRgba(config.strokeColor, config.strokeOpacity)}`,
     textShadow: buildTextShadow(config),
-    backgroundColor: hexToRgba(config.backgroundColor, config.backgroundOpacity),
+    backgroundColor: hexToRgba(
+      config.backgroundColor,
+      config.backgroundOpacity,
+    ),
     padding: `${config.paddingY}px ${config.paddingX}px`,
     opacity: effectiveBlinkVisible ? 1 : 0,
     animationName,
-    animationDuration: animationName ? `${config.animation.duration}s` : undefined,
+    animationDuration: animationName
+      ? `${config.animation.duration}s`
+      : undefined,
     animationDelay: animationName ? `${config.animation.delay}s` : undefined,
-    animationTimingFunction: animationName ? 'ease-in-out' : undefined,
-    animationDirection: animationName && config.animation.alternate ? 'alternate' : undefined,
+    animationTimingFunction: animationName ? "ease-in-out" : undefined,
+    animationDirection:
+      animationName && config.animation.alternate ? "alternate" : undefined,
     animationIterationCount:
       animationName && config.animation.iterations === 0
-        ? 'infinite'
+        ? "infinite"
         : animationName
           ? String(config.animation.iterations)
           : undefined,
-    whiteSpace: 'pre',
-    display: 'inline-block',
-  }
+    whiteSpace: "pre",
+    display: "inline-block",
+  };
 
-  const alignClass = `align-h-${config.horizontalAlign} align-v-${config.verticalAlign}`
-  const containerClassName = className ? `render-page ${alignClass} ${className}` : `render-page ${alignClass}`
+  const alignClass = `align-h-${config.horizontalAlign} align-v-${config.verticalAlign}`;
+  const containerClassName = className
+    ? `render-page ${alignClass} ${className}`
+    : `render-page ${alignClass}`;
 
   if (!config.scroll.enabled) {
     return (
@@ -1355,20 +1679,28 @@ function TextEffectRenderer({ config, className }: { config: TextEffectConfig; c
           {config.text}
         </div>
       </div>
-    )
+    );
   }
 
-  const duration = clamp(48 / config.scroll.speed, 1.2, 60)
-  const scrollTrackStyle: CSSProperties & Record<'--te-scroll-distance', string> = {
+  const duration = clamp(48 / config.scroll.speed, 1.2, 60);
+  const scrollTrackStyle: CSSProperties &
+    Record<"--te-scroll-distance", string> = {
     animationDuration: `${duration}s`,
     gap: `${config.scroll.gap}px`,
-    '--te-scroll-distance': `${scrollMetrics.distance}px`,
-  }
+    "--te-scroll-distance": `${scrollMetrics.distance}px`,
+  };
 
   return (
     <div className={containerClassName}>
-      <div className="scroll-viewport" data-axis={isHorizontal ? 'x' : 'y'} ref={scrollViewportRef}>
-        <div className={`scroll-track dir-${config.scroll.direction}`} style={scrollTrackStyle}>
+      <div
+        className="scroll-viewport"
+        data-axis={isHorizontal ? "x" : "y"}
+        ref={scrollViewportRef}
+      >
+        <div
+          className={`scroll-track dir-${config.scroll.direction}`}
+          style={scrollTrackStyle}
+        >
           {Array.from({ length: scrollMetrics.repeatCount }, (_, index) => (
             <div
               key={`scroll-item-${index}`}
@@ -1383,69 +1715,72 @@ function TextEffectRenderer({ config, className }: { config: TextEffectConfig; c
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-function RenderPage({ baseConfig }: { baseConfig: TextEffectConfig }): ReactElement {
-  const [config, setConfig] = useState(() => applyCssOverrides(baseConfig))
+function RenderPage({
+  baseConfig,
+}: {
+  baseConfig: TextEffectConfig;
+}): ReactElement {
+  const [config, setConfig] = useState(() => applyCssOverrides(baseConfig));
 
   useEffect(() => {
     const updateWithCssOverrides = () => {
-      setConfig(applyCssOverrides(baseConfig))
-    }
+      setConfig(applyCssOverrides(baseConfig));
+    };
 
-    let timeoutId: number | undefined
+    let timeoutId: number | undefined;
     const scheduleSingleUpdate = () => {
       if (timeoutId !== undefined) {
-        window.clearTimeout(timeoutId)
+        window.clearTimeout(timeoutId);
       }
-      timeoutId = window.setTimeout(updateWithCssOverrides, 0)
-    }
+      timeoutId = window.setTimeout(updateWithCssOverrides, 0);
+    };
 
-    if (document.readyState === 'complete') {
-      scheduleSingleUpdate()
+    if (document.readyState === "complete") {
+      scheduleSingleUpdate();
       return () => {
         if (timeoutId !== undefined) {
-          window.clearTimeout(timeoutId)
+          window.clearTimeout(timeoutId);
         }
-      }
+      };
     }
 
-    const onLoad = () => scheduleSingleUpdate()
-    window.addEventListener('load', onLoad, { once: true })
+    const onLoad = () => scheduleSingleUpdate();
+    window.addEventListener("load", onLoad, { once: true });
 
     return () => {
-      window.removeEventListener('load', onLoad)
+      window.removeEventListener("load", onLoad);
       if (timeoutId !== undefined) {
-        window.clearTimeout(timeoutId)
+        window.clearTimeout(timeoutId);
       }
-    }
-  }, [baseConfig])
+    };
+  }, [baseConfig]);
 
   return (
     <main className="render-root">
       <TextEffectRenderer config={config} />
     </main>
-  )
+  );
 }
 
 function App() {
-  const [search, setSearch] = useState(() => window.location.search)
+  const [search, setSearch] = useState(() => window.location.search);
 
   useEffect(() => {
-    const onPopState = () => setSearch(window.location.search)
-    window.addEventListener('popstate', onPopState)
-    return () => window.removeEventListener('popstate', onPopState)
-  }, [])
+    const onPopState = () => setSearch(window.location.search);
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
-  const renderMode = isRenderMode(search)
+  const renderMode = isRenderMode(search);
 
   if (renderMode) {
-    return <RenderPage baseConfig={getRenderConfigFromLocation(search)} />
+    return <RenderPage baseConfig={getRenderConfigFromLocation(search)} />;
   }
 
-  return <EditorPage />
+  return <EditorPage />;
 }
 
-export default App
-
+export default App;

@@ -510,34 +510,45 @@ function getSlideVector(direction: SlideDirection, distance: number): { x: numbe
 
 function applyCssOverrides(base: TextEffectConfig): TextEffectConfig {
   const rootStyle = getComputedStyle(document.documentElement)
+  const bodyStyle = document.body ? getComputedStyle(document.body) : undefined
+  const readCssVar = (name: string): string => {
+    const rootValue = stripQuotes(rootStyle.getPropertyValue(name))
+    if (rootValue.length > 0) {
+      return rootValue
+    }
+    if (!bodyStyle) {
+      return ''
+    }
+    return stripQuotes(bodyStyle.getPropertyValue(name))
+  }
 
-  const text = stripQuotes(rootStyle.getPropertyValue('--te-text'))
-  const fontFamily = stripQuotes(rootStyle.getPropertyValue('--te-font-family'))
-  const color = stripQuotes(rootStyle.getPropertyValue('--te-color'))
-  const colorOpacity = stripQuotes(rootStyle.getPropertyValue('--te-color-opacity'))
-  const fontSize = stripQuotes(rootStyle.getPropertyValue('--te-font-size'))
-  const fontWeight = stripQuotes(rootStyle.getPropertyValue('--te-font-weight'))
-  const letterSpacing = stripQuotes(rootStyle.getPropertyValue('--te-letter-spacing'))
-  const strokeWidth = stripQuotes(rootStyle.getPropertyValue('--te-stroke-width'))
-  const strokeColor = stripQuotes(rootStyle.getPropertyValue('--te-stroke-color'))
-  const strokeOpacity = stripQuotes(rootStyle.getPropertyValue('--te-stroke-opacity'))
-  const backgroundColor = stripQuotes(rootStyle.getPropertyValue('--te-background-color'))
-  const backgroundOpacity = stripQuotes(rootStyle.getPropertyValue('--te-background-opacity'))
-  const shadowEnabled = stripQuotes(rootStyle.getPropertyValue('--te-shadow-enabled'))
-  const shadowX = stripQuotes(rootStyle.getPropertyValue('--te-shadow-x'))
-  const shadowY = stripQuotes(rootStyle.getPropertyValue('--te-shadow-y'))
-  const shadowBlur = stripQuotes(rootStyle.getPropertyValue('--te-shadow-blur'))
-  const shadowSpread = stripQuotes(rootStyle.getPropertyValue('--te-shadow-spread'))
-  const shadowColor = stripQuotes(rootStyle.getPropertyValue('--te-shadow-color'))
-  const shadowOpacity = stripQuotes(rootStyle.getPropertyValue('--te-shadow-opacity'))
-  const animationPreset = stripQuotes(rootStyle.getPropertyValue('--te-animation-preset'))
-  const animationDuration = stripQuotes(rootStyle.getPropertyValue('--te-animation-duration'))
-  const scrollEnabled = stripQuotes(rootStyle.getPropertyValue('--te-scroll-enabled'))
-  const scrollDirection = stripQuotes(rootStyle.getPropertyValue('--te-scroll-direction'))
-  const scrollSpeed = stripQuotes(rootStyle.getPropertyValue('--te-scroll-speed'))
-  const blinkEnabled = stripQuotes(rootStyle.getPropertyValue('--te-blink-enabled'))
-  const blinkPeriod = stripQuotes(rootStyle.getPropertyValue('--te-blink-period'))
-  const blinkDutyCycle = stripQuotes(rootStyle.getPropertyValue('--te-blink-duty-cycle'))
+  const text = readCssVar('--te-text')
+  const fontFamily = readCssVar('--te-font-family')
+  const color = readCssVar('--te-color')
+  const colorOpacity = readCssVar('--te-color-opacity')
+  const fontSize = readCssVar('--te-font-size')
+  const fontWeight = readCssVar('--te-font-weight')
+  const letterSpacing = readCssVar('--te-letter-spacing')
+  const strokeWidth = readCssVar('--te-stroke-width')
+  const strokeColor = readCssVar('--te-stroke-color')
+  const strokeOpacity = readCssVar('--te-stroke-opacity')
+  const backgroundColor = readCssVar('--te-background-color')
+  const backgroundOpacity = readCssVar('--te-background-opacity')
+  const shadowEnabled = readCssVar('--te-shadow-enabled')
+  const shadowX = readCssVar('--te-shadow-x')
+  const shadowY = readCssVar('--te-shadow-y')
+  const shadowBlur = readCssVar('--te-shadow-blur')
+  const shadowSpread = readCssVar('--te-shadow-spread')
+  const shadowColor = readCssVar('--te-shadow-color')
+  const shadowOpacity = readCssVar('--te-shadow-opacity')
+  const animationPreset = readCssVar('--te-animation-preset')
+  const animationDuration = readCssVar('--te-animation-duration')
+  const scrollEnabled = readCssVar('--te-scroll-enabled')
+  const scrollDirection = readCssVar('--te-scroll-direction')
+  const scrollSpeed = readCssVar('--te-scroll-speed')
+  const blinkEnabled = readCssVar('--te-blink-enabled')
+  const blinkPeriod = readCssVar('--te-blink-period')
+  const blinkDutyCycle = readCssVar('--te-blink-duty-cycle')
 
   return sanitizeConfig({
     ...base,
@@ -1379,7 +1390,36 @@ function RenderPage({ baseConfig }: { baseConfig: TextEffectConfig }): ReactElem
   const [config, setConfig] = useState(() => applyCssOverrides(baseConfig))
 
   useEffect(() => {
-    setConfig(applyCssOverrides(baseConfig))
+    const updateWithCssOverrides = () => {
+      setConfig(applyCssOverrides(baseConfig))
+    }
+
+    let timeoutId: number | undefined
+    const scheduleSingleUpdate = () => {
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId)
+      }
+      timeoutId = window.setTimeout(updateWithCssOverrides, 0)
+    }
+
+    if (document.readyState === 'complete') {
+      scheduleSingleUpdate()
+      return () => {
+        if (timeoutId !== undefined) {
+          window.clearTimeout(timeoutId)
+        }
+      }
+    }
+
+    const onLoad = () => scheduleSingleUpdate()
+    window.addEventListener('load', onLoad, { once: true })
+
+    return () => {
+      window.removeEventListener('load', onLoad)
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId)
+      }
+    }
   }, [baseConfig])
 
   return (
